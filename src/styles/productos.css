@@ -1,0 +1,1953 @@
+/* COPIA de operaciones-de-venta/src/styles/productos.css (paso 2 de VENTA)
+   El cuerpo del archivo se mantiene byte a byte igual al original a propósito: es la única forma de
+   garantizar que la pantalla se vea idéntica, y permite volver a copiarla cuando la app de origen
+   ajuste sus estilos. Por eso conserva los nombres de clase de allá aunque acá algunos sujetos sean
+   otros. Las variables `--p-*` que usa están definidas en este mismo archivo.
+
+   LO ÚNICO propio de esta app va al FINAL, bajo "AJUSTES PROPIOS DE COMPRAS". Al recopiar la hoja de
+   origen se reemplaza todo menos esa sección. No editar reglas en el medio: se perderían. */
+
+/**
+ * Paso 2 · Seleccionar productos — diseño nuevo.
+ * Namespaceado bajo `.productos-v2`: los componentes compartidos (tabla, panel de stock,
+ * buscador) conservan su aspecto anterior en los pasos de venta y remito.
+ */
+
+.productos-v2 {
+  --p-bg-card: #ffffff;
+  --p-bg-input: #f4f5f7;
+  --p-border: #e4e7ec;
+  --p-text-main: #1f2937;
+  --p-text-secondary: #667085;
+  --p-primary: #0052cc;
+  --p-primary-hover: #0043a6;
+  --p-success: #00c875;
+  --p-danger: #e44258;
+  --p-step-purple: #7c3aed;
+  --p-radius-md: 8px;
+  --p-radius-lg: 12px;
+  --p-shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.04);
+
+  max-width: 1480px;
+  margin: 0 auto;
+  /* Sin padding arriba: la barra de contexto arranca pegada al borde del panel. */
+  padding: 0 24px;
+  color: var(--p-text-main);
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Contenedor de consulta: los grids internos (resumen de métricas) se reordenan según el ANCHO
+     DISPONIBLE de la sección —que en Monday depende de los paneles laterales—, no del viewport. */
+  container-type: inline-size;
+}
+.productos-v2 input,
+.productos-v2 button,
+.productos-v2 select {
+  font-family: inherit;
+}
+
+/* Los selectores viven en la barra de contexto (.paso-header, en components.css). */
+
+/* El stepper (tamaños, colores y línea) es común: vive en components.css. */
+
+/* ===== Cards ===== */
+.productos-v2 .card {
+  background: var(--p-bg-card);
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-lg);
+  padding: 24px;
+  box-shadow: var(--p-shadow-soft);
+  margin-bottom: 0;
+}
+
+/* ===== Búsqueda y filtros ===== */
+.productos-v2 .search-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.productos-v2 .search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+}
+.productos-v2 .search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.productos-v2 .search-input-wrapper > i {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--p-text-secondary);
+  font-size: 16px;
+}
+.productos-v2 .search-input {
+  width: 100%;
+  padding: 12px 20px 12px 48px;
+  font-size: 15px;
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-md);
+  /* Fondo blanco, igual que el buscador de clientes: unifica el aspecto de los dos buscadores. */
+  background: #fff;
+  outline: none;
+  transition: all 0.2s;
+  color: var(--p-text-main);
+}
+.productos-v2 .search-input:focus {
+  border-color: var(--p-primary);
+  background: var(--p-bg-card);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+}
+.productos-v2 .search-input::placeholder {
+  color: var(--p-text-secondary);
+}
+/* Resultados del buscador: se anclan al ancho del input, no al de la fila. */
+.productos-v2 .results {
+  right: auto;
+  width: 100%;
+  border-radius: var(--p-radius-md);
+  border-color: var(--p-border);
+  max-height: 260px;
+}
+/* Con paginación el alto lo pone la lista: la barra de navegación no scrollea. */
+.productos-v2 .results--paged {
+  max-height: none;
+}
+.productos-v2 .results--paged .results-list {
+  max-height: 260px;
+}
+.productos-v2 .results-pager {
+  border-color: var(--p-border);
+  background: var(--p-bg-input);
+}
+.productos-v2 .results-pager-btn {
+  color: var(--p-primary);
+  background: var(--p-bg-card);
+  border-color: var(--p-border);
+  border-radius: var(--p-radius-md);
+}
+.productos-v2 .results-pager-info {
+  color: var(--p-text-secondary);
+}
+.productos-v2 .search-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-danger);
+}
+
+.productos-v2 .filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.productos-v2 .filter-select {
+  padding: 8px 32px 8px 16px;
+  border: 1px solid var(--p-border);
+  border-radius: 20px;
+  background-color: var(--p-bg-card);
+  color: var(--p-text-main);
+  font-size: 13px;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+.productos-v2 .chips-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-left: 16px;
+  border-left: 1px solid var(--p-border);
+  padding-left: 16px;
+}
+.productos-v2 .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #f0f4f8;
+  color: var(--p-text-main);
+}
+.productos-v2 .chip-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--p-primary);
+  flex-shrink: 0;
+}
+.productos-v2 .chip-close {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--p-text-secondary);
+  font-size: 11px;
+}
+.productos-v2 .chip-close:hover {
+  color: var(--p-text-main);
+}
+.productos-v2 .chips-empty {
+  font-size: 12px;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .btn-link {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--p-primary);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0 8px;
+}
+
+/* ===== Producto seleccionado ===== */
+.productos-v2 .selected-product-box {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #ffffff;
+  border: 1px dashed var(--p-primary);
+  border-radius: var(--p-radius-md);
+  padding: 20px 24px;
+  margin-top: 8px;
+}
+/* Sin producto elegido el box sigue en su lugar, apagado: el layout no salta. */
+.productos-v2 .selected-product-box--vacio {
+  border-color: var(--p-border);
+  background: #fcfcfd;
+}
+.productos-v2 .selected-product-box--vacio .product-name {
+  color: var(--p-text-secondary);
+  font-weight: 600;
+}
+/* La búsqueda no encontró nada: el mismo lugar lo explica, sin sacar el box de su sitio. */
+.productos-v2 .selected-product-box--aviso {
+  border-color: var(--p-danger);
+  background: #fff8f9;
+}
+.productos-v2 .selected-product-box--aviso .product-name {
+  color: var(--p-danger);
+  font-weight: 700;
+}
+.productos-v2 .selected-product-box--aviso .product-name i {
+  margin-right: 8px;
+}
+.productos-v2 .stock-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 22px 16px;
+  border-top: 1px dashed var(--p-border);
+  color: var(--p-text-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+.productos-v2 .stock-placeholder i {
+  font-size: 16px;
+  opacity: 0.7;
+}
+/* --- Producto elegido: dos filas de dos columnas --- */
+/* FILA 1: la ficha del producto a la izquierda; los campos y el resumen, a la derecha. */
+.productos-v2 .cl-top {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+}
+/* Columna de operación: la cuenta arriba y el resumen debajo, los dos contra el margen DERECHO
+   de la card y arrancando desde el borde superior (el grid ya los alinea al top). */
+.productos-v2 .cl-oper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  min-width: 0;
+}
+.productos-v2 .cl-oper > * {
+  max-width: 100%;
+}
+.productos-v2 .cl-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.productos-v2 .cl-stock {
+  border-left: 1px solid var(--p-border);
+  padding-left: 24px;
+  min-width: 0;
+}
+/* Precio de lista y rentabilidad: los dos datos de catálogo, en cuerpo grande (mín. 15px). */
+.productos-v2 .cl-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-top: 12px;
+}
+.productos-v2 .cl-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.productos-v2 .cl-kpi-l {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.productos-v2 .cl-kpi-v {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+/* Mensaje de error del precio unitario (administrador): debajo de la caja, cuando falta o es 0. */
+.productos-v2 .cl-precio-err {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--p-danger);
+  max-width: 180px;
+  line-height: 1.25;
+}
+/* Sub-card del precio de partida real (lista − pronto pago): abre la cuenta de la fila de
+   operación, en lugar de un input, porque es un dato que no se edita en ningún caso. */
+.productos-v2 .cl-subcard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-width: 240px;
+  padding: 12px 16px;
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-md);
+  background: #f7f9fc;
+}
+.productos-v2 .cl-subcard-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.productos-v2 .cl-subcard-l {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+.productos-v2 .cl-subcard-note {
+  font-size: 11px;
+  color: var(--p-text-secondary);
+}
+/* Mismo cuerpo que el "Precio Unitario" de arriba (`.cl-kpi-v`): son los dos precios de la
+   ficha y tienen que leerse con el mismo peso. */
+.productos-v2 .cl-subcard-v {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--p-primary);
+  white-space: nowrap;
+}
+
+/* La cuenta de la operación, en una sola línea horizontal y alineada por su base:
+   precio actual − descuento (% o $) = precio unitario final. */
+.productos-v2 .cl-mid {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+/* El igual que separa los operandos del resultado. */
+.productos-v2 .cl-igual {
+  padding-bottom: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+}
+/* Resultado de la cuenta: misma caja que el precio de partida, en verde por ser el precio de
+   venta, y con su contenido centrado. */
+.productos-v2 .cl-cardfin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+  min-width: 170px;
+  padding: 12px 16px;
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-md);
+  background: #f6fbf8;
+}
+.productos-v2 .cl-cardfin-l {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.productos-v2 .cl-cardfin-v {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
+/* FILA 2: el desglose del descuento y, a la derecha, el stock del producto. */
+.productos-v2 .cl-bottom {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 2fr);
+  gap: 24px;
+  align-items: start;
+  padding-top: 20px;
+  border-top: 1px dashed var(--p-border);
+}
+/* Remito (sin datos financieros): no hay desglose, el stock toma el ancho completo. */
+.productos-v2 .cl-bottom--solo-stock {
+  grid-template-columns: minmax(0, 1fr);
+}
+.productos-v2 .cl-bottom--solo-stock .cl-stock {
+  border-left: none;
+  padding-left: 0;
+}
+.productos-v2 .cl-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding: 16px 20px;
+  border-radius: var(--p-radius-md);
+  background: #f7f9fc;
+}
+/* Sin datos financieros (remito y devolución) no hay métricas: quedan sólo la cantidad y el botón,
+   sin fondo ni caja, contra el margen derecho.
+   Se alinean por su BASE y no por su centro: "Cantidad" arrastra su rótulo arriba, así que
+   centrando la fila se centra el bloque entero (rótulo + input) contra el botón, y el input queda
+   unos píxeles más abajo. Con `flex-end` el input y el botón apoyan sobre la misma línea. */
+.productos-v2 .cl-resumen:not(:has(.cl-metric)) {
+  background: none;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0;
+}
+.productos-v2 .cl-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+/* El subtotal cierra el resumen: va detrás de un filete, como el total de un comprobante. */
+.productos-v2 .cl-metric--sep {
+  border-left: 1px solid var(--p-border);
+  padding-left: 28px;
+}
+.productos-v2 .cl-metric-l {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+/* Valor de cada métrica del resumen.
+   RESERVA su ancho en lugar de crecer con el número: la fila usa `space-between`, así que un
+   subtotal más largo le comía el espacio libre y corría de lugar a la cantidad, al descuento y al
+   botón. Cargar unidades movía media fila.
+   Los 15ch son el PEOR caso real, medido: "$ 99.999.999,99" son 15 caracteres, así que hasta ese
+   importe —bastante más que los 10 millones— la columna no cambia de ancho.
+   `tabular-nums` es lo que hace confiable la medida: con dígitos de ancho uniforme, 1ch vale para
+   cualquier número, y de paso el importe deja de temblar al pasar de 1 a 2, que tipográficamente
+   son anchos distintos. */
+.productos-v2 .cl-metric-v {
+  min-width: 15ch;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--p-text-main);
+  white-space: nowrap;
+}
+/* La rentabilidad es un PORCENTAJE, no un importe: su peor caso ("-1.234,56%") entra en 9ch, así
+   que reservarle los 15 de un importe ensancharía la fila sin necesidad y la haría envolverse antes
+   de tiempo en pantallas angostas. */
+.productos-v2 .cl-metric-v--pct {
+  min-width: 9ch;
+}
+.productos-v2 .cl-metric-v--verde {
+  color: var(--green-dark);
+}
+.productos-v2 .cl-metric-v--azul {
+  color: var(--p-primary);
+}
+/* El subtotal cierra la operación: 1px más que el resto de los importes del resumen. */
+.productos-v2 .cl-metric-v--sub {
+  font-size: 19px;
+}
+.productos-v2 .cl-metric-note {
+  font-size: 11px;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .cl-resumen .btn-primary {
+  padding: 12px 22px;
+  white-space: nowrap;
+}
+/* Sin ancho para las dos columnas, las filas 1 y 3 se apilan y el filete pasa a horizontal. */
+@container (max-width: 900px) {
+  .productos-v2 .cl-top,
+  .productos-v2 .cl-bottom {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .productos-v2 .cl-stock {
+    border-left: none;
+    border-top: 1px solid var(--p-border);
+    padding-left: 0;
+    padding-top: 20px;
+  }
+}
+
+.productos-v2 .product-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+.productos-v2 .product-meta {
+  font-size: 12px;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .control-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.productos-v2 .control-item > label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.productos-v2 .qty-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.productos-v2 .qty-btn {
+  background: var(--p-bg-card);
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--p-text-secondary);
+  font-weight: 600;
+}
+.productos-v2 .qty-btn:hover:not(:disabled) {
+  background: var(--p-bg-input);
+}
+.productos-v2 .qty-btn:disabled,
+.productos-v2 .qty-val:disabled,
+.productos-v2 .std-input:disabled {
+  background: var(--p-bg-input);
+  color: #a1a3b1;
+  cursor: not-allowed;
+}
+.productos-v2 .qty-val {
+  width: 40px;
+  border: none;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  border-left: 1px solid var(--p-border);
+  border-right: 1px solid var(--p-border);
+  outline: none;
+  padding: 8px 0;
+  -moz-appearance: textfield;
+}
+.productos-v2 .qty-val::-webkit-outer-spin-button,
+.productos-v2 .qty-val::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.productos-v2 .std-input {
+  width: 110px;
+  padding: 8px 12px;
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  outline: none;
+  color: var(--p-text-main);
+  background: #fff;
+}
+.productos-v2 .std-input[readonly] {
+  background: var(--p-bg-input);
+  cursor: default;
+}
+/* Ancho para un decimal con su sufijo: «1,5 %» entra sin recortarse. */
+.productos-v2 .std-input.small {
+  width: 88px;
+  padding-right: 28px;
+}
+.productos-v2 .desc-wrapper {
+  position: relative;
+}
+.productos-v2 .desc-suffix {
+  position: absolute;
+  right: 12px;
+  top: 9px;
+  color: var(--p-text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+}
+/* Tope de descuento alcanzado: no se puede seguir aumentando. */
+.productos-v2 .desc-wrapper--tope .std-input,
+.productos-v2 .desc-wrapper--tope .desc-suffix {
+  color: var(--p-danger);
+}
+.productos-v2 .desc-wrapper--tope .std-input {
+  border-color: var(--p-danger);
+  background: #fff5f6;
+}
+.productos-v2 .desc-tope {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--p-danger);
+  white-space: nowrap;
+  display: none;
+}
+.productos-v2 .desc-tope.on {
+  display: block;
+}
+/* 100%: no es un error, es un producto bonificado por completo. */
+.productos-v2 .desc-tope--gratis {
+  color: var(--p-success);
+}
+.productos-v2 .desc-wrapper--tope .std-input:focus {
+  border-color: var(--p-danger);
+}
+
+/* ===== Botones ===== */
+.productos-v2 .btn-primary {
+  background: var(--p-primary);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.productos-v2 .btn-primary:hover:not(:disabled) {
+  background: var(--p-primary-hover);
+}
+.productos-v2 .btn-primary:disabled {
+  background: #e6e9ef;
+  color: #a1a3b1;
+  cursor: not-allowed;
+}
+.productos-v2 .btn-outline {
+  background: var(--p-bg-card);
+  border: 1px solid var(--p-border);
+  padding: 12px 24px;
+  border-radius: var(--p-radius-md);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--p-text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.productos-v2 .btn-outline:hover:not(:disabled) {
+  background: var(--p-bg-input);
+}
+.productos-v2 .btn-outline:disabled {
+  color: #a1a3b1;
+  cursor: not-allowed;
+}
+
+/* ===== Stock y cobertura ===== */
+.productos-v2 .stock {
+  display: flex;
+  /* Permite que "Proveedor" y el bloque de stock/cobertura se apilen cuando falta ancho, en vez de
+     comprimirse hasta solaparse. */
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-start;
+  font-size: 13px;
+}
+/* Dentro del panel (preview del producto elegido) la ficha ocupa su propia línea, arriba de
+   las cajas de stock. En el detalle de la línea va suelta, en la cabecera del bloque. */
+.productos-v2 .stock .stock-prov {
+  flex: 1 1 100%;
+}
+/* Ficha del proveedor en UNA línea: código, razón social y tipo de mercadería. */
+.productos-v2 .stock-prov {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.productos-v2 .stock-prov-cod {
+  font-size: 14px;
+  color: var(--p-primary);
+  font-weight: 700;
+  margin-bottom: 0;
+}
+.productos-v2 .stock-prov-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text-main);
+  margin-bottom: 0;
+}
+/* El tipo de mercadería se separa de la razón social con un filete, no con más tamaño. */
+.productos-v2 .stock-tipo {
+  font-size: 14px;
+  color: var(--p-text-secondary);
+  margin-top: 0;
+  padding-left: 10px;
+  border-left: 1px solid var(--p-border);
+}
+.productos-v2 .stock-tipo b {
+  color: var(--p-text-main);
+}
+/* Consignada: se distingue en dorado, no es mercadería propia. */
+.productos-v2 .stock-tipo--consignada b {
+  color: #b58200;
+}
+.productos-v2 .stock-main {
+  flex: 1 1 340px;
+  display: flex;
+  /* Clave del solapamiento: las cajas de stock y la barra de cobertura eran una fila horizontal
+     sin `flex-wrap`; al angostar se aplastaban una sobre otra. Ahora la cobertura BAJA debajo de
+     las cajas cuando no entran al lado. */
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-start;
+  min-width: 0;
+}
+/* `min-width: 0` en los dos bloques: si no, las cards imponen su ancho mínimo y le
+   comen el espacio a la barra de cobertura. */
+.productos-v2 .stock-boxes {
+  display: flex;
+  /* Las cajas (3, o 4 con los ingresos de la devolución) envuelven entre sí en angosto. */
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: 1 1 320px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+/* El ícono se ancla a la esquina: el texto de la card no lo mueve ni lo deforma. */
+.productos-v2 .stock-box {
+  position: relative;
+  display: block;
+  /* Base de ~130px: en pantallas anchas siguen creciendo por igual, pero al angostar envuelven en
+     vez de aplastarse por debajo de su contenido. */
+  flex: 1 1 130px;
+  min-width: 0;
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  padding: 10px 44px 10px 16px;
+  min-height: 62px;
+  background: var(--p-bg-card);
+}
+.productos-v2 .stock-box-t {
+  font-size: 11px;
+  color: var(--p-text-secondary);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.productos-v2 .stock-box-v {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+/* El ícono va suelto, sin la pastilla de fondo del diseño anterior. */
+.productos-v2 .stock-box-ic {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 0;
+  background: none !important;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.9;
+  pointer-events: none;
+}
+.productos-v2 .cov-wrap {
+  flex: 1.5 1 240px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.productos-v2 .cov-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  margin-bottom: 12px;
+}
+/* Ayuda de la barra: explica qué mide sin ocupar una línea de texto. */
+.productos-v2 .cov-info {
+  color: var(--p-text-secondary);
+  font-size: 12px;
+  cursor: help;
+}
+/* Pista de la barra de temperatura: la escala completa, apagada, siempre visible.
+   En bloque, no en flex: como item flexible el relleno se encogía a cero. */
+.productos-v2 .cov-bar {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #d7f4e5 0%, #fdf1c4 50%, #fbd8de 100%);
+}
+.productos-v2 .cov-fill {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: none !important;
+  transition: width 0.35s ease;
+}
+/* Degradado escalado al ancho de la pista: la punta del relleno marca la temperatura. */
+.productos-v2 .cov-heat {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--p-success) 0%, #ffcb00 50%, var(--p-danger) 100%);
+  transition: width 0.35s ease;
+}
+.productos-v2 .cov-track {
+  height: 14px;
+}
+.productos-v2 .cov-needle {
+  font-size: 17px;
+  top: -5px;
+  transition: left 0.35s ease, color 0.35s ease;
+}
+.productos-v2 .cov-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--p-text-main);
+  font-weight: 500;
+}
+.productos-v2 .cov-alerta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--p-danger);
+}
+/* Al pasarse de lo disponible la barra late, para que no se lea como un tope normal. */
+.productos-v2 .cov-wrap--excede .cov-bar {
+  animation: cov-pulso 1.6s ease-in-out infinite;
+}
+@keyframes cov-pulso {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(228, 66, 88, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(228, 66, 88, 0.18);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .productos-v2 .cov-wrap--excede .cov-bar {
+    animation: none;
+  }
+  .productos-v2 .cov-fill,
+  .productos-v2 .cov-heat,
+  .productos-v2 .cov-needle {
+    transition: none;
+  }
+}
+
+/* ===== Tabla ===== */
+.productos-v2 .tablec {
+  background: var(--p-bg-card);
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-lg);
+  box-shadow: var(--p-shadow-soft);
+  margin-top: 0;
+  margin-bottom: 0;
+  padding: 8px 24px 16px;
+  overflow-x: auto;
+}
+/* Resumen financiero del remito POSTERIOR: la tarjeta de importes queda a la IZQUIERDA, con la
+   misma jerarquía que el resto de la app (`.kpi-card` + `.subtotal-lines`). */
+.productos-v2 .remito-importe-wrap {
+  display: flex;
+  justify-content: flex-start;
+}
+.productos-v2 .remito-importe-wrap .kpi-card {
+  min-width: 340px;
+}
+.productos-v2 .thtitle {
+  padding: 16px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  border-bottom: none;
+  background: none;
+}
+.productos-v2 .tablec th {
+  /* Padding horizontal ajustado para dar lugar a la columna "P. Unit c/Desc" sin desbordar. */
+  padding: 12px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-text-secondary);
+  border-bottom: 1px solid var(--p-border);
+  white-space: nowrap;
+}
+.productos-v2 .tablec td {
+  padding: 16px 12px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--p-border);
+  vertical-align: middle;
+}
+/* Los importes no se parten ni se pegan entre sí: hay lugar para millones ($ 1.456.789). */
+.productos-v2 .tablec td.ta-r,
+.productos-v2 .tablec th.ta-r {
+  white-space: nowrap;
+  min-width: 108px;
+}
+.productos-v2 .tablec td.ta-c,
+.productos-v2 .tablec th.ta-c {
+  white-space: nowrap;
+}
+/* La rentabilidad cambia de ancho con cada descuento ("99%" → "99,39%" → "-100%") y, al
+   hacerlo, corría todas las columnas de al lado. El ancho se fija al del peor caso, así
+   editar el descuento no mueve nada de la fila. */
+.productos-v2 .tablec td.col-rent,
+.productos-v2 .tablec th.col-rent {
+  width: 104px;
+  min-width: 104px;
+}
+/* El nombre del producto es lo único que cede ancho cuando falta espacio. */
+.productos-v2 .tablec tbody td:nth-child(3) {
+  min-width: 200px;
+}
+.productos-v2 .tablec tbody tr:hover {
+  background: #f9fafb;
+}
+.productos-v2 .tablec .rexp:hover,
+.productos-v2 .tablec .rexp {
+  background: #f9fafb;
+}
+/* Único encabezado que envuelve en dos líneas: en una sola se comía el ancho de la tabla. */
+.productos-v2 .tablec th.col-pcd {
+  white-space: normal;
+  min-width: 118px;
+  max-width: 136px;
+}
+
+/* ===== Detalle de la línea (fila desplegada) ===== */
+.productos-v2 .expd {
+  background: #fff;
+  border-radius: var(--p-radius-md);
+  border-color: var(--p-border);
+  margin: 10px 12px 16px 44px;
+  padding: 20px 24px;
+}
+/* Dos bloques: cómo se compone el descuento (izq.) y el stock del producto (der.), separados
+   por un filete vertical. Al angostarse se apilan y el filete pasa a horizontal. */
+.productos-v2 .lindet {
+  display: grid;
+  /* Con el stock en vertical las dos columnas se equilibran: el desglose no queda apretado y a
+     las tres cajas les sobra ancho para ir en una sola línea. */
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr);
+  gap: 24px;
+  align-items: start;
+}
+/* Línea sin ficha de catálogo (no hay stock que mostrar): una sola columna, acotada. */
+.productos-v2 .lindet--solo {
+  grid-template-columns: minmax(0, 420px);
+}
+.productos-v2 .lindet-stock {
+  border-left: 1px solid var(--p-border);
+  padding-left: 24px;
+  min-width: 0;
+}
+/* En la columna de stock —la del detalle de la fila y la de la carga de producto— el bloque se
+   lee en VERTICAL: las cajas y la cobertura, una debajo de la otra. */
+.productos-v2 .lindet-stock .stock,
+.productos-v2 .lindet-stock .stock-main,
+.productos-v2 .cl-stock .stock,
+.productos-v2 .cl-stock .stock-main {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 16px;
+  width: 100%;
+}
+.productos-v2 .lindet-stock .stock-main,
+.productos-v2 .cl-stock .stock-main {
+  flex: 0 0 auto;
+}
+/* Las tres cajas, en cambio, se mantienen SIEMPRE en una misma línea y se reparten el ancho
+   por igual; al angostarse se encogen (`min-width: 0`) en vez de bajar una debajo de otra. */
+.productos-v2 .lindet-stock .stock-boxes,
+.productos-v2 .cl-stock .stock-boxes {
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+  width: 100%;
+}
+.productos-v2 .lindet-stock .stock-box,
+.productos-v2 .cl-stock .stock-box {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.productos-v2 .lindet-stock .cov-wrap,
+.productos-v2 .cl-stock .cov-wrap {
+  flex: 0 0 auto;
+  width: 100%;
+}
+.productos-v2 .lindet-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+/* Título del bloque a la izquierda y ficha del proveedor pegada al margen derecho. Al faltar
+   ancho la ficha baja a la línea de abajo, siempre alineada a la derecha. */
+.productos-v2 .lindet-hrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 24px;
+  margin-bottom: 16px;
+}
+.productos-v2 .lindet-hrow .lindet-h {
+  margin-bottom: 0;
+}
+.productos-v2 .lindet-hrow .stock-prov {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  text-align: right;
+}
+.productos-v2 .lindet-h-ic {
+  color: var(--p-primary);
+  font-size: 15px;
+}
+/* Rótulo · % · importe. El grid vive en el contenedor y cada fila aporta sus tres celdas
+   (`display: contents`): así los % y los importes quedan alineados en columna aunque una
+   fila traiga un input y la otra un chip de texto. */
+.productos-v2 .lindet-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(90px, auto);
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 12px;
+}
+.productos-v2 .lindet-row {
+  display: contents;
+}
+.productos-v2 .lindet-lbl {
+  font-size: 13px;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .lindet-mid {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+}
+.productos-v2 .lindet-val {
+  justify-self: end;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  white-space: nowrap;
+}
+/* Chip del %: mismo alto que el input editable de la fila de al lado, para que las dos
+   se lean parejas aunque una sea editable y la otra no. */
+.productos-v2 .lindet-pct {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: #eef2f7;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .lindet-sep {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--p-border);
+  margin: 2px 0;
+}
+/* Cierre del bloque: el descuento total resume las dos líneas de arriba. */
+.productos-v2 .lindet-row--fuerte .lindet-lbl,
+.productos-v2 .lindet-row--fuerte .lindet-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+@container (max-width: 900px) {
+  .productos-v2 .lindet {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .productos-v2 .lindet-stock {
+    border-left: none;
+    border-top: 1px solid var(--p-border);
+    padding-left: 0;
+    padding-top: 20px;
+  }
+}
+
+/* Descuento editable en la fila, con el mismo lenguaje que la cantidad. */
+/* Sin `overflow: hidden`: el aviso del tope se posiciona debajo del campo y con el recorte
+   quedaba invisible. El input no tiene borde ni fondo propios, así que no hay nada que
+   recortar contra el borde redondeado. */
+.productos-v2 .dbox {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.productos-v2 .dbox:focus-within {
+  border-color: var(--p-primary);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+}
+.productos-v2 .dbox input {
+  width: 46px;
+  border: none;
+  outline: none;
+  padding: 7px 2px 7px 8px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  background: none;
+}
+.productos-v2 .dbox-suf {
+  padding: 0 8px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-text-secondary);
+}
+/* Fuera de rango (de 0% al máximo, o 100% de bonificación): no se aplica hasta corregirlo. */
+.productos-v2 .dbox--error {
+  border-color: var(--p-danger);
+  background: #fff5f6;
+}
+.productos-v2 .dbox--error input,
+.productos-v2 .dbox--error .dbox-suf {
+  color: var(--p-danger);
+}
+/* El motivo del rechazo, debajo del campo y sin empujar la fila. */
+.productos-v2 .dbox {
+  position: relative;
+}
+.productos-v2 .dbox-aviso {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--p-danger);
+  white-space: nowrap;
+}
+
+/* Precio unitario editable (override del administrador): mismo lenguaje que el descuento, con el
+   símbolo de la moneda como prefijo fijo. Se distingue del resto de los importes por ser el único
+   que se puede pisar, así que el campo va con su borde a la vista. */
+.productos-v2 .pbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.productos-v2 .pbox:focus-within {
+  border-color: var(--p-primary);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+}
+.productos-v2 .pbox-pre {
+  padding: 0 2px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .pbox input {
+  width: 92px;
+  border: none;
+  outline: none;
+  padding: 7px 8px 7px 2px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  background: none;
+}
+/* Precio vacío o en cero: no se aplica hasta corregirlo. */
+.productos-v2 .pbox--error {
+  border-color: var(--p-danger);
+  background: #fff5f6;
+}
+.productos-v2 .pbox--error input,
+.productos-v2 .pbox--error .pbox-pre {
+  color: var(--p-danger);
+}
+
+/* Cantidad editable en la fila: mismo lenguaje que el control de la carga de producto. */
+.productos-v2 .qbox {
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.productos-v2 .qbox:focus-within {
+  border-color: var(--p-primary);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+}
+.productos-v2 .qbox input {
+  width: 46px;
+  padding: 7px 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  border-right: 1px solid var(--p-border);
+}
+.productos-v2 .qbox .qbtns button {
+  background: var(--p-bg-card);
+  color: var(--p-text-secondary);
+  width: 24px;
+  height: 16px;
+  font-size: 10px;
+}
+.productos-v2 .qbox .qbtns button:hover:not(:disabled) {
+  background: var(--p-bg-input);
+}
+.productos-v2 .qbox .qbtns button:first-child {
+  border-bottom: 1px solid var(--p-border);
+}
+/* Cantidad inválida. Va namespaceado porque `.productos-v2 .qbox` (0,2,0) le gana por especificidad
+   a `.qbox--error` (0,1,0) de la base: sin esto el borde rojo nunca se pintaba y sólo quedaba el
+   fondo rosa, que solo no alcanza para leerse como un error. */
+/* Proyección del stock al registrar la devolución, al lado del valor que hoy tiene el tablero.
+   Va en verde y un cuerpo menor: acompaña al dato real, no lo reemplaza. */
+.productos-v2 .stock-box-proy {
+  margin-left: 8px;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--green-dark);
+}
+
+.productos-v2 .qbox--error {
+  border-color: var(--red);
+  background: #fff5f6;
+}
+.productos-v2 .qbox--error input {
+  background: #fff5f6;
+  border-right-color: var(--red);
+  color: var(--red);
+  font-weight: 700;
+}
+.productos-v2 .qbox--error .qbtns button {
+  background: #fff5f6;
+  color: var(--red);
+}
+.productos-v2 .qbox--error .qbtns button:first-child {
+  border-bottom-color: var(--red);
+}
+/* Al enfocar sigue mandando el error: el campo no deja de estar mal porque se lo esté editando. */
+.productos-v2 .qbox--error:focus-within {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(228, 66, 88, 0.12);
+}
+/* Alto reservado para el input de cantidad en este contexto (qbox más alto que la base): iguala el
+   alto de la fila con y sin selección, evitando el layout shift al marcar el producto. */
+.productos-v2 .pend-qty-slot {
+  min-height: 34px;
+}
+
+/* ===== Totales ===== */
+.productos-v2 .totals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.5fr;
+  gap: 16px;
+}
+.productos-v2 .kpi-card {
+  background: var(--p-bg-card);
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-lg);
+  padding: 24px;
+  box-shadow: var(--p-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.productos-v2 .subtotal-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.productos-v2 .sub-row {
+  display: flex;
+  /* Rótulo a la izquierda y su importe a la derecha, separados por todo el ancho de la fila. */
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--p-text-main);
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--p-border);
+}
+.productos-v2 .rent-lbl {
+  font-size: 12px;
+  color: var(--p-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  /* Pequeña separación con los indicadores que lleva debajo. */
+  padding-bottom: 5px;
+}
+/* Rentabilidad y crédito en una sola tarjeta: dos anillos y el detalle de importes, separados
+   por una LÍNEA DIVISORA VERTICAL con padding parejo a ambos lados. */
+.productos-v2 .indicadores-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 24px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+/* Divisor vertical entre la rentabilidad (primer anillo) y el bloque de crédito. */
+.productos-v2 .indicadores-layout > .donut-container:first-child {
+  border-right: 1px solid var(--p-border);
+  padding-right: 24px;
+}
+.productos-v2 .indicadores-layout .credit-details {
+  min-width: 200px;
+}
+.productos-v2 .credit-layout {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-top: 8px;
+}
+.productos-v2 .donut-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.productos-v2 .donut-chart {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.productos-v2 .donut-inner {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--p-bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+/* 16px y en una sola línea: la rentabilidad general puede traer decimales ("36,17%") y a 18px no
+   entraba en los 64px del anillo. Un valor entero se sigue leyendo igual de destacado. */
+.productos-v2 .donut-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--p-text-main);
+  line-height: 1;
+  white-space: nowrap;
+}
+.productos-v2 .donut-lbl {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--p-text-secondary);
+  margin-top: 4px;
+}
+.productos-v2 .donut-footer {
+  font-size: 11px;
+  color: var(--p-text-secondary);
+  margin-top: 12px;
+  font-weight: 500;
+}
+.productos-v2 .credit-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+.productos-v2 .credit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  border-bottom: 1px solid var(--p-border);
+  padding-bottom: 8px;
+}
+.productos-v2 .credit-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.productos-v2 .c-lbl {
+  font-size: 11px;
+  color: var(--p-text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.productos-v2 .c-val {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--p-text-main);
+  white-space: nowrap;
+}
+/* Aviso de etapa bloqueada tras emitir un documento oficial (guardrail post-emisión). */
+.productos-v2 .aviso-bloqueo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .aviso-bloqueo i {
+  color: var(--yellow, #e2a500);
+  font-size: 16px;
+}
+
+/* Aclaración de la conversión de dólares bajo la métrica de crédito (presupuesto bimonetario). */
+.productos-v2 .credito-nota-usd {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--p-text-secondary);
+  font-style: italic;
+}
+
+/* ===== Footer ===== */
+.productos-v2 .page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  margin-top: 16px;
+  margin-bottom: 48px;
+}
+.productos-v2 .actions-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.productos-v2 .footer-err {
+  color: var(--p-danger);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ===================================================================
+   Selección desde documentos pendientes (venta, factura y remito).
+   Misma gramática que la carga desde catálogo: cards blancas de 12px,
+   buscador ancho, tabla clara y acciones al pie.
+   =================================================================== */
+/* Sin separación entre el panel de documentos y la lista de productos: los dos bloques van
+   pegados y comparten el filete, así el panel no deja aire muerto a su derecha.
+
+   Los dos miden lo mismo y ese alto NO depende del contenido: filtrar, buscar o llevarse
+   productos a la venta no puede mover el resto de la página. Lo que sobra scrollea adentro. */
+.productos-v2 .pend-grid {
+  --pend-alto: 660px;
+
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  column-gap: 0;
+  row-gap: 16px;
+  margin-bottom: 0;
+  align-items: start;
+}
+
+/* --- Panel de documentos (presupuestos / remitos / ventas) --- */
+/* Pegado a la lista de productos: el filete de la derecha lo pone ella, y las esquinas de ese
+   lado quedan rectas para que los dos bloques se lean como una sola pieza. */
+.productos-v2 .presup-panel {
+  background: var(--p-bg-card);
+  border: 1px solid var(--p-border);
+  border-right: none;
+  border-radius: var(--p-radius-lg) 0 0 var(--p-radius-lg);
+  box-shadow: var(--p-shadow-soft);
+  overflow: hidden;
+  /* Alto fijo, el mismo que la lista de productos. La cabecera y el pie no se mueven; la
+     lista de cards de al medio es la que scrollea cuando hay más documentos de los que entran. */
+  height: var(--pend-alto);
+  max-height: none;
+}
+.productos-v2 .presup-head {
+  padding: 20px 20px 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--p-text-main);
+  border-bottom: none;
+  background: none;
+}
+/* Las cards ocupan todo el ancho del panel: sin padding lateral, van de borde a borde. */
+.productos-v2 .presup-list {
+  padding: 4px 0 12px;
+  gap: 0;
+}
+/* El cliente no tiene documentos asociados: sin ellos no se puede seguir, va en rojo. */
+.productos-v2 .presup-vacio {
+  padding: 28px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  /* Neutro mientras se consulta; el rojo queda para el impedimento real. */
+  color: var(--p-text-secondary);
+}
+.productos-v2 .presup-vacio--alerta {
+  color: var(--p-danger);
+}
+.productos-v2 .tablec-empty--alerta {
+  color: var(--p-danger);
+  font-weight: 600;
+}
+.productos-v2 .presup-foot {
+  padding: 12px 20px;
+  border-top: 1px solid var(--p-border);
+  font-size: 12px;
+  color: var(--p-text-secondary);
+  background: none;
+}
+
+/* Card de documento: se comporta como filtro, y al elegirla queda punteada en azul. */
+/* A todo el ancho del panel: sin bordes laterales ni esquinas redondeadas, cada card se lee
+   como una fila de la lista. El filete de abajo es lo que las separa entre sí. */
+.productos-v2 .pcard {
+  width: 100%;
+  background: var(--p-bg-card);
+  border: none;
+  border-bottom: 1px solid var(--p-border);
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  padding: 14px 20px 14px 17px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.productos-v2 .presup-list .pcard:last-child {
+  border-bottom: none;
+}
+.productos-v2 .pcard:hover {
+  background: #f8f9fb;
+  border-left-color: var(--p-border);
+}
+/* Elegida como filtro: se marca con el filete de la izquierda, no con un contorno. */
+.productos-v2 .pcard.sel {
+  background: #f2f7ff;
+  border-left-color: var(--p-primary);
+  box-shadow: none;
+}
+.productos-v2 .pcard-id {
+  color: var(--p-primary);
+  font-weight: 700;
+  font-size: 14px;
+}
+.productos-v2 .pbadge {
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.productos-v2 .pcol-l {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+  letter-spacing: 0.5px;
+}
+.productos-v2 .pcol-v {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--p-text-main);
+}
+.productos-v2 .fac-nest {
+  border-radius: 6px;
+}
+
+/* La lista de productos cierra el bloque por la derecha: sus esquinas de ese lado son las
+   únicas redondeadas, y su filete izquierdo es el que separa del panel de documentos.
+
+   Alto fijo, igual al del panel. Título, buscador y acciones quedan quietos; la zona de filas
+   toma el resto y scrollea. Así la altura no cambia al filtrar por card, al buscar por nombre
+   ni al ir llevándose productos a la venta. */
+.productos-v2 .pend-grid .tablec {
+  border-radius: 0 var(--p-radius-lg) var(--p-radius-lg) 0;
+  height: var(--pend-alto);
+  display: flex;
+  flex-direction: column;
+  /* El scroll lo maneja `.pend-scroll`; acá sobra y daría una segunda barra. */
+  overflow: hidden;
+}
+/* Ocupa lo que queda del alto fijo, en vez de un tope propio. */
+.productos-v2 .pend-grid .pend-scroll {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+/* --- Lista de productos pendientes --- */
+.productos-v2 .pend-hint {
+  padding: 0 24px;
+  font-size: 13px;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .pend-hint i {
+  color: var(--p-primary);
+}
+.productos-v2 .pend-search {
+  padding: 16px 24px 0;
+  gap: 12px;
+}
+.productos-v2 .pend-search .iw {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+/* Botones de acción compactos, para que "Seleccionar todos" y "Ver todos" convivan con el
+   buscador sin empujar el ancho ni ir a otra línea. */
+.productos-v2 .pend-search .btn-outline {
+  padding: 10px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.productos-v2 .pend-search .fa-search {
+  left: 18px;
+  color: var(--p-text-secondary);
+  font-size: 15px;
+}
+.productos-v2 .pend-search .sinput {
+  height: 46px;
+  padding: 12px 20px 12px 48px;
+  font-size: 15px;
+  border: 1px solid var(--p-border);
+  border-radius: var(--p-radius-md);
+  background: var(--p-bg-input);
+  transition: all 0.2s;
+}
+.productos-v2 .pend-search .sinput:focus {
+  border-color: var(--p-primary);
+  background: var(--p-bg-card);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.1);
+}
+.productos-v2 .pend-scroll {
+  max-height: 420px;
+  padding: 0 12px;
+  margin-top: 12px;
+}
+/* La tabla llena el ancho de su columna y puede encoger (sin el piso de 680px de la base): con el
+   padding reducido, todas las columnas entran sin scroll horizontal. */
+.productos-v2 .pend-table {
+  width: 100%;
+  min-width: 0;
+}
+.productos-v2 .pend-table th {
+  padding: 9px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-text-secondary);
+  border-bottom: 1px solid var(--p-border);
+}
+.productos-v2 .pend-table td {
+  padding: 9px 8px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--p-border);
+  vertical-align: middle;
+}
+/* Cabecera de sección de consignación: divide el listado en mercadería común y consignada. */
+.productos-v2 .pend-group-row:hover {
+  background: transparent;
+}
+.productos-v2 .pend-group {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--p-text-secondary);
+  background: #f4f6f9;
+  border-bottom: 1px solid var(--p-border);
+}
+/* La consignada se rotula en dorado, igual que su tipo de mercadería en el resto de la app. */
+.productos-v2 .pend-group--co {
+  color: #b58200;
+  background: #fdf6e6;
+}
+.productos-v2 .pend-row:hover {
+  background: #f9fafb;
+}
+.productos-v2 .pend-row.sel {
+  background: #eef4ff;
+}
+.productos-v2 .pend-row.dt-added {
+  background: #f6fbf8;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .pend-origen {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  background: #f0f4f8;
+  border-radius: 16px;
+  padding: 4px 10px;
+}
+.productos-v2 .estado-cell {
+  font-size: 13px;
+}
+.productos-v2 .pend-acts {
+  padding: 16px 24px;
+  border-top: 1px solid var(--p-border);
+  background: none;
+}
+/* El confirmar hereda el primario del paso, no el azul viejo de `.btn`. */
+.productos-v2 .pend-acts .btn-primary {
+  height: 46px;
+}
+
+/* --- Totales de dos columnas (factura: sin rentabilidad) --- */
+/* Importes (izq.) y rentabilidad+crédito (der.) forman UN ÚNICO panel: sin gap ni margen entre
+   ellos. La card de importes pierde su borde/redondeo derecho para unirse con la de la derecha. */
+.productos-v2 .totals-grid--2 {
+  grid-template-columns: 1fr 1.8fr;
+  column-gap: 0;
+}
+.productos-v2 .totals-grid--2 > .kpi-card:first-child {
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.productos-v2 .totals-grid--2 > .kpi-card:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* Cuando el ancho disponible no alcanza para las dos cards del resumen una al lado de la otra, se
+   APILAN en una sola columna. Así la card de "Rentabilidad y crédito" toma el ancho completo y sus
+   dos donuts + los datos de crédito entran en una fila sin envolver ni desacomodarse (que es lo que
+   pasaba en el viewport de notebook). Al apilarse dejan de ir "pegadas": se les restaura el borde y
+   las esquinas redondeadas, y se separan con un gap. */
+@container (max-width: 820px) {
+  .productos-v2 .totals-grid,
+  .productos-v2 .totals-grid--2 {
+    grid-template-columns: 1fr;
+    row-gap: 16px;
+  }
+  .productos-v2 .totals-grid--2 > .kpi-card:first-child {
+    border-right: 1px solid var(--p-border);
+    border-radius: var(--p-radius-lg);
+  }
+  .productos-v2 .totals-grid--2 > .kpi-card:last-child {
+    border-radius: var(--p-radius-lg);
+  }
+}
+/* Fila con control dentro de una tarjeta de totales (¿es con envío?). */
+.productos-v2 .kpi-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--p-border);
+}
+.productos-v2 .kpi-control label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.productos-v2 .kpi-control select {
+  padding: 8px 12px;
+  border: 1px solid var(--p-border);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--p-text-main);
+  outline: none;
+  cursor: pointer;
+}
+.productos-v2 .kpi-control select:focus {
+  border-color: var(--p-primary);
+}
+
+/* ===== Rentabilidad Forzada (debajo de los filtros del buscador) ===== */
+.productos-v2 .rentab-forzada {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Separación con los filtros de arriba IGUAL al gap del `.search-area` (16px), que es lo que separa
+     los filtros de la barra de búsqueda. Así el bloque queda espaciado como el resto de la card. */
+  margin-top: 16px;
+  /* padding-top EXACTO al espaciado (gap) del `.search-area`: la banda que separa el buscador de los
+     filtros. Así el bloque respira igual que la separación de arriba. */
+  padding: 16px 16px 14px;
+  border: 1px solid var(--p-border);
+  border-radius: 10px;
+  background: var(--p-bg-soft, #f7f9fc);
+}
+.productos-v2 .rentab-forzada-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.productos-v2 .rentab-forzada-lbl {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .rentab-forzada-in {
+  width: 110px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid var(--p-border);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 15px;
+  color: var(--p-text-main);
+}
+.productos-v2 .rentab-forzada-in:focus {
+  outline: none;
+  border-color: var(--p-primary);
+}
+.productos-v2 .rentab-forzada-btn {
+  height: 40px;
+}
+/* Encendida: el botón cambia de color (verde) para indicar que la funcionalidad está activa. */
+.productos-v2 .rentab-forzada-btn--activa,
+.productos-v2 .rentab-forzada-btn--activa:hover {
+  background: var(--p-success, #00a86b);
+  border-color: var(--p-success, #00a86b);
+}
+/* Aclaración a la derecha del botón mientras está encendida. */
+.productos-v2 .rentab-forzada-aviso {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--p-success, #00a86b);
+  max-width: 320px;
+  line-height: 1.25;
+}
+/* Acumulado a la derecha del botón: se empuja al margen cuando hay lugar. */
+.productos-v2 .rentab-forzada-total {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+.productos-v2 .rentab-forzada-total-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--p-text-secondary);
+}
+.productos-v2 .rentab-forzada-total-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--p-success, #00a86b);
+}
+/* Fila "Nota de Crédito x Comisión" del detalle de la línea: se distingue del descuento con un
+   acento verde, para que se lea como un concepto aparte del descuento total. */
+.productos-v2 .lindet-row--credito .lindet-lbl,
+.productos-v2 .lindet-row--credito .lindet-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--p-success, #00a86b);
+}
+
+/* ============================================================================
+   AJUSTES PROPIOS DE COMPRAS
+
+   Todo lo de arriba es la copia de `operaciones-de-venta`. Lo de acá abajo es de esta app y no
+   existe allá, así que va al final y en su propio bloque: cuando haya que volver a copiar la hoja
+   de origen, se reemplaza todo lo anterior y esta sección se conserva tal cual.
+
+   El motivo de fondo es el mismo en las dos reglas: en una compra la mercadería ENTRA, así que el
+   panel de stock no tiene barra de cobertura (ver `StockPanel`). Sin ella, el hueco que la hoja de
+   ventas le reserva al costado queda vacío.
+   ============================================================================ */
+
+/* El stock del detalle de una fila es TODO el contenido de la fila desplegada, no la mitad derecha
+   de un detalle de dos columnas: sin el filete de separación no hay nada de qué separarlo. */
+.productos-v2 .lindet-stock--solo {
+  border-left: none;
+  padding-left: 0;
+}
+
+/* La nota del ingreso es lo ÚNICO que queda en el bloque de la cobertura. Se centra en vertical
+   —fila flex, no columna— para que quede a la altura del texto y no pegada al borde de arriba,
+   que es donde caía cuando este contenedor todavía apilaba título, barra y nota. */
+.productos-v2 .lindet-stock .cov-wrap,
+.productos-v2 .cl-stock .cov-wrap {
+  flex-direction: row;
+  align-items: center;
+  min-height: 32px;
+}
+.productos-v2 .cov-note {
+  align-items: center;
+}
+
+/* "Cant Total a Pedir": el mismo campo de cantidad pero SIN los botones de + y −, porque no se
+   edita —es el resultado de Cant x Envase × Cant de Envases—. Sin esto los filetes internos de
+   `.qty-val`, que existen para separarlo de los dos botones, quedaban dibujados contra el borde
+   del grupo formando una línea doble. Se ensancha además porque un total de unidades tiene más
+   dígitos que un contador de envases. */
+.productos-v2 .qty-input-group--solo .qty-val {
+  border-left: none;
+  border-right: none;
+  width: 72px;
+}

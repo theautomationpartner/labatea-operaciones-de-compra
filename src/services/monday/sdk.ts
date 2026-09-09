@@ -1,0 +1,102 @@
+/**
+ * Acceso a la API de Monday por HTTP contra su endpoint GraphQL.
+ *
+ * - En desarrollo se pega contra `/monday-api`, proxy de Vite hacia api.monday.com (evita el CORS
+ *   de pegarle directo desde el navegador). El token sale de `.env.local` (VITE_MONDAY_TOKEN) y
+ *   viaja en la Authorization.
+ * - En producción se pega contra `/api/monday`, una Serverless Function (ver `api/monday.ts`) que
+ *   inyecta el token del lado servidor (`MONDAY_TOKEN`, sin prefijo VITE_). Así el token NUNCA
+ *   queda incrustado en el bundle del navegador, que es lo que pasaría si en un build de
+ *   producción se siguiera usando `VITE_MONDAY_TOKEN`.
+ *
+ * ── Lo que todavía falta ──
+ * No hay guardián de sesión, lista blanca ni segundo factor: las funciones de `api/` reenvían a
+ * Monday sin preguntar quién llama. El token ya no está expuesto, pero las rutas que lo usan sí.
+ * Antes de un uso real hay que traer el guardián de "Operaciones de venta"; se engancha en `api/`,
+ * no acá.
+ */
+const TOKEN = (import.meta.env.VITE_MONDAY_TOKEN as string | undefined)?.trim() || undefined
+
+const ENDPOINT = import.meta.env.DEV ? '/monday-api' : '/api/monday'
+/**
+ * Los archivos NO van al endpoint GraphQL común: Monday los recibe en `/v2/file`, por
+ * multipart/form-data. Mismo esquema de proxy que el resto (Vite en desarrollo, función serverless
+ * en producción), porque también necesita el token del servidor.
+ */
+const ENDPOINT_ARCHIVO = import.meta.env.DEV ? '/monday-api-file' : '/api/monday-upload'
+const API_VERSION = '2024-10'
+
+/** Host del bucket donde Monday guarda los archivos de las columnas file. */
+const FILES_HOST = 'https://files-monday-com.s3.amazonaws.com'
+
+/**
+ * En desarrollo hay acceso real a Monday sólo si hay token local; sin él la app arranca igual pero
+ * no sale a la red. En producción la autenticación la resuelve el proxy server-side, así que se
+ * asume habilitado (requiere que `MONDAY_TOKEN` esté configurado en el entorno del deploy).
+ */
+export const mondayHabilitado = (): boolean => (import.meta.env.DEV ? Boolean(TOKEN) : true)
+
+/**
+ * La `public_url` de un asset apunta a S3, que no manda cabeceras CORS: leerla desde el navegador
+ * falla. Se reescribe a un proxy del mismo origen que trae los bytes:
+ * - en desarrollo, el proxy de Vite (`/monday-files`);
+ * - en producción, la Serverless Function (`/api/monday-file`, ver `api/monday-file.ts`).
+ */
+export function urlArchivo(url: string): string {
+  if (!url.startsWith(FILES_HOST)) return url
+  if (import.meta.env.DEV) return `/monday-files${url.slice(FILES_HOST.length)}`
+  return `/api/monday-file?u=${encodeURIComponent(url)}`
+}
+
+/**
+ * En desarrollo la Authorization lleva el token personal, que es lo que el proxy de Vite reenvía
+ * tal cual. En producción NO se manda: el token lo pone la función serverless, y mandar uno desde
+ * el navegador significaría volver a incrustarlo en el bundle.
+ */
+const cabeceras = (extra: Record<string, string> = {}): Record<string, string> => ({
+  ...extra,
+  ...(import.meta.env.DEV ? { Authorization: TOKEN ?? '' } : {}),
+  'API-Version': API_VERSION,
+})
+
+interface ApiError {
+  message: string
+}
+
+/** Ejecuta una query/mutation GraphQL contra la API de Monday y devuelve `data`; lanza si falla. */
+export async function mondayApi<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: cabeceras({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ query, variables: variables ?? {} }),
+  })
+  if (!res.ok) throw new Error(`Monday API HTTP ${res.status}`)
+  const json = (await res.json()) as { data?: T; errors?: ApiError[] }
+  /* Monday contesta 200 con `errors` cuando la consulta es válida como HTTP pero no como GraphQL
+     (un campo que no existe en esta API-Version, por ejemplo). Sin este chequeo el error pasaría
+     como "no devolvió datos", que manda a buscar el problema al lado equivocado. */
+  if (json.errors?.length) throw new Error(json.errors.map((e) => e.message).join(' · '))
+  if (!json.data) throw new Error('Monday no devolvió datos.')
+  return json.data
+}
+
+/**
+ * Sube un archivo a una columna `file`. Es el ÚNICO camino: las columnas de archivo no se pueden
+ * completar por `column_values` —ahí sólo viaja JSON—, hay que mandar el binario.
+ *
+ * El cuerpo va como multipart en el formato que documenta Monday: la `query` en una parte y el
+ * binario en `variables[file]`, que es la variable `$file` de la mutación. El `Content-Type` NO se
+ * setea a mano: lo arma el navegador con el `boundary` que corresponde.
+ */
+export async function mondaySubirArchivo<T>(query: string, archivo: File): Promise<T> {
+  const form = new FormData()
+  form.append('query', query)
+  form.append('variables[file]', archivo, archivo.name)
+
+  const res = await fetch(ENDPOINT_ARCHIVO, { method: 'POST', headers: cabeceras(), body: form })
+  if (!res.ok) throw new Error(`Monday API (archivos) HTTP ${res.status}`)
+  const json = (await res.json()) as { data?: T; errors?: ApiError[] }
+  if (json.errors?.length) throw new Error(json.errors.map((e) => e.message).join(' · '))
+  if (!json.data) throw new Error('Monday no devolvió datos al subir el archivo.')
+  return json.data
+}

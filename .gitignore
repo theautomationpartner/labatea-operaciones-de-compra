@@ -1,0 +1,14 @@
+node_modules
+dist
+dist-ssr
+.vite
+
+# Secretos: el token de Monday vive en .env.local y NUNCA se versiona.
+# Lo que sí se versiona es .env.local.example, que documenta las variables sin valores.
+.env
+.env.*
+!.env.local.example
+*.local
+
+.vercel
+.DS_Store
