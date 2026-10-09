@@ -316,10 +316,14 @@ export const COL = {
     estadoCancelacion: 'color_mm5z77hz',
     /** "🤖Estado de Recepcion": ver `ESTADO_RECEPCION_INDEX`. */
     estadoRecepcion: 'color_mm7y8s54',
-    /** "🚛 ❓ Pend de Recibir Compra" (→ 18425512704): los pendientes de recepción de la orden. */
-    pendRecibir: 'board_relation_mm5zzm6f',
-    /** "🗒️ ❓ Pend de Recibir Fact." (→ 18425512694): los pendientes de factura de la orden. */
-    pendRecibirFact: 'board_relation_mm5zrhng',
+    /**
+     * "🚛 ❓ Pend de Recibir Compra" (→ 18425512704): los pendientes de recepción de la orden. La
+     * columna se recreó en el tablero (antes `board_relation_mm5zzm6f`). Para LEER los pendientes
+     * de una orden no se usa: se filtran desde su propio tablero (ver `getLineasOrden`).
+     */
+    pendRecibir: 'board_relation_mm7yqxkw',
+    /** "🗒️ ❓ Pend de Recibir Fact." (→ 18425512694). Recreada (antes `board_relation_mm5zrhng`). */
+    pendRecibirFact: 'board_relation_mm7yypmz',
     /* "🤖Cta Cte Proveedores" (lookup_mm719ar1) NO figura acá a propósito: es una MIRROR de la
        cuenta corriente del proveedor conectado, así que se completa sola en cuanto se escribe
        `proveedor`. Escribirla sería imposible —las mirror son de sólo lectura— y listarla acá

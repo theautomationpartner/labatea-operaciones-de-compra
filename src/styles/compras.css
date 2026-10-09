@@ -1005,6 +1005,36 @@
   margin-top: 12px;
   text-align: left;
 }
+.pend-tabla .ta-r {
+  text-align: right;
+}
+.consultar-v .cons-flecha {
+  margin: 0 4px;
+  font-size: 10px;
+  color: var(--text-gray);
+}
+/* El total de la orden después de editarla: el anterior tachado y el nuevo destacado. */
+.consultar-v .cons-total-orden {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--tint-summary);
+  border: 1px solid var(--tint-summary-bd);
+  font-size: 13px;
+  text-align: left;
+}
+.consultar-v .cons-total-orden strong {
+  font-size: 15px;
+}
+.consultar-v .cons-total-antes {
+  margin-right: 8px;
+  color: var(--text-gray);
+  text-decoration: line-through;
+}
 .consultar-v .cons-btn-peligro {
   background: #df2f4a;
 }

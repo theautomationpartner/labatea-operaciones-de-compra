@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type Mouse
 import { Modal } from '@/components/ui/Modal'
 import { ModalCargando } from '@/components/ui/ModalCargando'
 import { PasoHeader, PasoTitulo } from '@/features/shared/PasoHeader'
+import { money } from '@/lib/format'
 import { numeroSinPrefijo } from '@/lib/ordenDoc'
 import { casillaDeEnvio, puedeHacerExcepciones } from '@/lib/permisos'
 import { enviarConsultaOrdenMake } from '@/services/make/envioOrdenCompra'
@@ -12,6 +13,8 @@ import {
   firma,
   getLineasOrden,
   getOrdenesEnCurso,
+  totalLineaOrden,
+  totalOrdenLineas,
   urlPdfOrden,
   type CambioCantidad,
   type EstadoRecepcion,
@@ -37,7 +40,14 @@ const POR_PAGINA = 8
 type Ventana =
   | { tipo: 'cancelar'; orden: OrdenEnCurso }
   | { tipo: 'consultar'; orden: OrdenEnCurso }
-  | { tipo: 'enviar'; orden: OrdenEnCurso; regenerada: OrdenRegenerada }
+  | { tipo: 'enviar'; orden: OrdenEnCurso; regenerada: OrdenRegenerada; resumen: ResumenEdicion }
+
+/** Lo que dejó la edición: cada producto editado con su nuevo importe, y el total de la orden. */
+interface ResumenEdicion {
+  productos: { subId: string; nombre: string; antes: number; ahora: number; importe: number }[]
+  totalAntes: number
+  total: number
+}
 
 /** Cantidades pedidas en edición: `subId` → lo escrito. */
 type Edicion = { ordenId: string; valores: Record<string, string>; error: string | null }
@@ -251,7 +261,8 @@ export function ConsultarOrdenesView() {
         return `«${l.nombre}»: se compra de a ${cant(l.cantXEnvase)} unidades por ${l.unidad || 'envase'}. Sólo Compras o Administración pueden pedir otra cantidad.`
       }
       if (n > 0) quedan++
-      if (n !== l.pedida) cambios.push({ linea: l, pedida: n })
+      // También se reescribe si el pendiente quedó distinto del subelemento, aunque no se haya tocado.
+      if (n !== l.pedida || (l.pendId && l.pedidaPend !== n)) cambios.push({ linea: l, pedida: n })
     }
     if (quedan === 0) return 'La orden tiene que quedar con al menos un producto. Para darla de baja, cancelala.'
     return cambios
@@ -290,7 +301,17 @@ export function ConsultarOrdenesView() {
         enFila: true,
       })
       const regenerada = await regenerarPdfOrden(o, nuevas)
-      setVentana({ tipo: 'enviar', orden: o, regenerada })
+      const resumen: ResumenEdicion = {
+        productos: r
+          .filter(({ linea, pedida }) => pedida !== linea.pedida)
+          .map(({ linea, pedida }) => {
+            const nueva = nuevas.find((l) => l.subId === linea.subId)!
+            return { subId: linea.subId, nombre: linea.nombre, antes: linea.pedida, ahora: pedida, importe: totalLineaOrden(nueva) }
+          }),
+        totalAntes: totalOrdenLineas(lineas),
+        total: totalOrdenLineas(nuevas),
+      }
+      setVentana({ tipo: 'enviar', orden: o, regenerada, resumen })
     } catch (e) {
       if (e instanceof ErrorOperacion) {
         setAviso({
@@ -597,6 +618,7 @@ export function ConsultarOrdenesView() {
       {ventana?.tipo === 'enviar' && (
         <ModalEnviarEditada
           orden={ventana.orden}
+          resumen={ventana.resumen}
           onClose={() => {
             setVentana(null)
             setAviso({ tipo: 'ok', texto: `Se guardaron los cambios de la orden N°${ventana.orden.numero}.` })
@@ -812,10 +834,12 @@ function DetalleOrden({ lineas, edicion, onEscribir, onReintentar }: DetalleOrde
 /** ¿Enviar la orden editada? Los cambios ya están guardados: "No" sólo cierra. */
 function ModalEnviarEditada({
   orden,
+  resumen,
   onClose,
   onEnviar,
 }: {
   orden: OrdenEnCurso
+  resumen: ResumenEdicion
   onClose: () => void
   onEnviar: () => void
 }) {
@@ -836,8 +860,43 @@ function ModalEnviarEditada({
       }
     >
       Los cambios de la orden <strong>N°{orden.numero}</strong> quedaron guardados y su PDF ya está
-      registrado en el sistema. ¿Querés enviarle la orden de compra editada a{' '}
-      <strong>{orden.proveedorNombre}</strong>?
+      registrado en el sistema.
+      {resumen.productos.length > 0 && (
+        <table className="pend-tabla cons-modal-tabla">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th className="ta-c">Cantidad pedida</th>
+              <th className="ta-r">Nuevo importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {resumen.productos.map((p) => (
+              <tr key={p.subId}>
+                <td>
+                  <span className="pend-prod">{p.nombre}</span>
+                </td>
+                <td className="ta-c">
+                  {cant(p.antes)} <i className="fas fa-arrow-right cons-flecha" /> <strong>{cant(p.ahora)}</strong>
+                </td>
+                <td className="ta-r">
+                  <strong>{money(p.importe)}</strong>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <p className="cons-total-orden">
+        <span>Nuevo importe total de la orden</span>
+        <span>
+          {resumen.totalAntes !== resumen.total && (
+            <span className="cons-total-antes">{money(resumen.totalAntes)}</span>
+          )}
+          <strong>{money(resumen.total)}</strong>
+        </span>
+      </p>
+      ¿Querés enviarle la orden de compra editada a <strong>{orden.proveedorNombre}</strong>?
     </Modal>
   )
 }

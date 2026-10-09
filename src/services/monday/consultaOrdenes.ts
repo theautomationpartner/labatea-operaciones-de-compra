@@ -29,8 +29,6 @@ export interface OrdenEnCurso {
   /** Etiqueta y color de "🤖Estado de Recepcion". */
   recepcionTexto: string
   colorRecepcion: string
-  /** IDs de sus ítems en "Pend de Recibir Compra": de ahí salen las líneas al editarla. */
-  pendIds: string[]
 }
 
 const COLUMNAS = [
@@ -39,7 +37,6 @@ const COLUMNAS = [
   COL.ordenCompra.idCompra,
   COL.ordenCompra.estadoCancelacion,
   COL.ordenCompra.estadoRecepcion,
-  COL.ordenCompra.pendRecibir,
 ]
 
 const SELECCION = `
@@ -101,7 +98,6 @@ export async function getOrdenesEnCurso(): Promise<OrdenEnCurso[]> {
           c[COL.ordenCompra.estadoRecepcion]?.index === ESTADO_RECEPCION_INDEX.parcial ? 'parcial' : 'pendiente',
         recepcionTexto: valor(c[COL.ordenCompra.estadoRecepcion]),
         colorRecepcion: colorDe(c[COL.ordenCompra.estadoRecepcion]),
-        pendIds: c[COL.ordenCompra.pendRecibir]?.linked_item_ids ?? [],
       }
     })
     .sort((a, b) => (b.fechaEmision ?? '').localeCompare(a.fechaEmision ?? ''))
@@ -139,7 +135,10 @@ export interface LineaOrden {
   cantXEnvase: number
   /** Costo de UN envase, tal como quedó en la orden ("🤖Costo"). */
   costo: number
+  /** Unidades pedidas: las del SUBELEMENTO, que es el que lleva el precio y el total de la línea. */
   pedida: number
+  /** "🤖Q Pedida" del pendiente. Si no coincide con `pedida`, al guardar se corrige. `null` sin pendiente. */
+  pedidaPend: number | null
   recibida: number
   pendiente: number
   estado: string
@@ -173,23 +172,34 @@ const SELECCION_CV = `
   }
 `
 
-/** Los productos de la orden, en el orden en que se cargaron. */
-export async function getLineasOrden(orden: Pick<OrdenEnCurso, 'id' | 'pendIds'>): Promise<LineaOrden[]> {
-  const pendIds = orden.pendIds.slice(0, 100)
+/**
+ * Los productos de la orden, en el orden en que se cargaron.
+ *
+ * Los pendientes de recibir se buscan en SU tablero, filtrando por la orden a la que apuntan
+ * ("🛒 Orden Compra" del pendiente), y no por la columna inversa de la orden: ésa se recreó una vez
+ * con otro ID y, mientras la app leía la vieja, los pendientes no aparecían ni se editaban.
+ */
+export async function getLineasOrden(orden: Pick<OrdenEnCurso, 'id'>): Promise<LineaOrden[]> {
   const data = await mondayApi<{
     orden: { subitems: MondayItem[] | null }[]
-    pends?: MondayItem[]
+    pends: { items_page: { items: MondayItem[] } }[]
   }>(
-    `query ($orden: [ID!]${pendIds.length ? ', $pends: [ID!]' : ''}) {
+    `query ($orden: [ID!]) {
       orden: items(ids: $orden) {
         subitems { id name column_values(ids: ${JSON.stringify(SUBITEMS_COLS)}) { ${SELECCION_CV} } }
       }
-      ${pendIds.length ? `pends: items(ids: $pends, limit: 100) { id name column_values(ids: ${JSON.stringify(PEND_COLS)}) { ${SELECCION_CV} } }` : ''}
+      pends: boards(ids: [${BOARDS.pendRecibirCompra}]) {
+        items_page(limit: 100, query_params: {rules: [
+          {column_id: "${COL.pendRecibirCompra.ordenCompra}", compare_value: [${Number(orden.id)}], operator: any_of}
+        ]}) {
+          items { id name column_values(ids: ${JSON.stringify(PEND_COLS)}) { ${SELECCION_CV} } }
+        }
+      }
     }`,
-    pendIds.length ? { orden: [orden.id], pends: pendIds } : { orden: [orden.id] },
+    { orden: [orden.id] },
   )
   const pendPorProducto = new Map<string, MondayItem>()
-  for (const p of data.pends ?? []) {
+  for (const p of data.pends[0]?.items_page.items ?? []) {
     const prod = byId(p)[COL.pendRecibirCompra.producto]?.linked_item_ids?.[0]
     if (prod && !pendPorProducto.has(prod)) pendPorProducto.set(prod, p)
   }
@@ -202,9 +212,10 @@ export async function getLineasOrden(orden: Pick<OrdenEnCurso, 'id' | 'pendIds'>
     const pend = pendPorProducto.get(productoId)
     const pcv = pend ? byId(pend) : null
 
-    /* Las cantidades salen del PENDIENTE, que es el que mueve la recepción; sin pendiente, del
-       subelemento, que lleva las mismas columnas. */
-    const pedida = pcv ? num(pcv[COL.pendRecibirCompra.qPedida]?.text) : num(c[COL.ordenCompraSub.cantTotal]?.text)
+    /* Lo PEDIDO sale del subelemento (lleva el precio y el total); lo RECIBIDO, del pendiente, que
+       es el que mueve la recepción. Sin pendiente, todo del subelemento. */
+    const pedida = num(c[COL.ordenCompraSub.cantTotal]?.text)
+    const pedidaPend = pcv ? num(pcv[COL.pendRecibirCompra.qPedida]?.text) : null
     const recibida = pcv
       ? sumaMirror(pcv[COL.pendRecibirCompra.qRemitada])
       : num(c[COL.ordenCompraSub.cantRecibida]?.text)
@@ -226,6 +237,7 @@ export async function getLineasOrden(orden: Pick<OrdenEnCurso, 'id' | 'pendIds'>
       cantXEnvase: cantXEnvase > 0 ? cantXEnvase : 1,
       costo: num(c[COL.ordenCompraSub.precio]?.text),
       pedida,
+      pedidaPend,
       recibida,
       pendiente: Math.max(0, pedida - recibida),
       estado: estadoCv?.text ?? (recibida > 0 ? 'Parcialmente Recibido' : 'Pend de Recibir'),
@@ -257,6 +269,14 @@ export async function cancelarOrden(orden: Pick<OrdenEnCurso, 'id' | 'numero'>, 
   await crearUpdate(orden.id, `Orden N°${orden.numero} cancelada desde Consultar Órdenes de Compra.\n${firma(usuario)}`)
 }
 
+/** Importe de una línea: envases (unidades ÷ cant x envase) × costo por envase. */
+export const totalLineaOrden = (l: Pick<LineaOrden, 'pedida' | 'cantXEnvase' | 'costo'>): number =>
+  round2((l.pedida / l.cantXEnvase) * l.costo)
+
+/** Importe total de la orden: la suma de sus líneas. */
+export const totalOrdenLineas = (lineas: readonly LineaOrden[]): number =>
+  round2(lineas.reduce((acc, l) => acc + totalLineaOrden(l), 0))
+
 export interface CambioCantidad {
   linea: LineaOrden
   /** Nuevas unidades pedidas. */
@@ -265,8 +285,9 @@ export interface CambioCantidad {
 
 /**
  * Reescribe lo PEDIDO de cada producto editado, en UNA sola mutación:
- *   · el subelemento de la orden: unidades, envases y total de la línea (envases × costo);
- *   · el pendiente de recibir: "🤖Q Pedida";
+ *   · el subelemento de la orden: unidades, envases y total de la línea (envases × costo): editar la
+ *     cantidad cambia el importe de la línea;
+ *   · el pendiente de recibir de ESE producto: "🤖Q Pedida" con las mismas unidades;
  *   · la cabecera de la orden: total, envases y unidades, recalculados con todas las líneas.
  * Devuelve las líneas ya editadas.
  */
@@ -277,10 +298,12 @@ export async function editarCantidadesOrden(
 ): Promise<LineaOrden[]> {
   const nuevas = lineas.map((l) => {
     const c = cambios.find((x) => x.linea.subId === l.subId)
-    return c ? { ...l, pedida: c.pedida, pendiente: Math.max(0, c.pedida - l.recibida) } : l
+    return c
+      ? { ...l, pedida: c.pedida, pedidaPend: l.pendId ? c.pedida : null, pendiente: Math.max(0, c.pedida - l.recibida) }
+      : l
   })
   const envases = (l: LineaOrden) => l.pedida / l.cantXEnvase
-  const totalDe = (l: LineaOrden) => round2(envases(l) * l.costo)
+  const totalDe = totalLineaOrden
 
   const raices: string[] = []
   const variables: Record<string, unknown> = {}
@@ -308,7 +331,7 @@ export async function editarCantidadesOrden(
   )
   variables.oid = orden.id
   variables.ocv = JSON.stringify({
-    [COL.ordenCompra.total]: round2(nuevas.reduce((acc, l) => acc + totalDe(l), 0)),
+    [COL.ordenCompra.total]: totalOrdenLineas(nuevas),
     [COL.ordenCompra.totalEnvases]: nuevas.reduce((acc, l) => acc + envases(l), 0),
     [COL.ordenCompra.totalUnidades]: nuevas.reduce((acc, l) => acc + l.pedida, 0),
   })
