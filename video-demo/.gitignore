@@ -5,3 +5,6 @@ salidas/
 recon/
 audio/
 *.mp4
+.hyperframes/
+.waveform-cache/
+.thumbnails/
