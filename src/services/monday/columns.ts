@@ -220,6 +220,8 @@ export const COL = {
     descuentos: ['numeric_mm51nabp', 'numeric_mm51af5x', 'numeric_mm51abwq', 'numeric_mm511z1v'],
     /** "✋️Bonif En Mercaderia": la bonificación en mercadería, en % (28 = 28%). */
     bonifMercaderia: 'numeric_mm51ea99',
+    /** "✋IVA" (numbers, en %): la alícuota del producto (21, 10,5…). */
+    iva: 'numeric_mm5gyrnb',
     /** "✋️Flete": importe en $ que se suma al costo final para formar los precios de venta. */
     flete: 'numeric_mm589hex',
     /** "🤖Costo Final" (fórmula): el costo con descuentos y bonificación. Base de las listas. */
@@ -299,6 +301,8 @@ export const COL = {
     idCompra: 'pulse_id_mm5zskj8',
     /** "🤖Nro Orden" (numbers): el número de la orden ("OC-006" → 6), el que se imprime en el PDF. */
     nroOrden: 'numeric_mm7xfvh3',
+    /** "🤖IVA $" (numbers): el IVA total de la orden, la suma del IVA de sus productos. */
+    iva: 'numeric_mm7z19n0',
     /** "🤖 Fecha Estimada de Recepcion" (date): emisión + "✋️OC 100% Recibida en:" del proveedor. */
     fechaRecepcionEstimada: 'date_mm7yvm4v',
     /** "🤖Casilla de Envío" (text): desde qué correo sale la orden (ver `CASILLA_ENVIO`). */
@@ -357,6 +361,10 @@ export const COL = {
     descuento: 'numeric_mm7xgb34',
     /** "🤖Bonif.en Mercaderia" (numbers): el % de bonificación en mercadería. */
     bonifMercaderia: 'numeric_mm7x9vq',
+    /** "🤖IVA $" (numbers): el IVA del producto en pesos (subtotal × "✋IVA" del Maestro). */
+    iva: 'numeric_mm7zbe7z',
+    /** "🤖IVA %" (numbers, en %): la alícuota de IVA aplicada al producto ("✋IVA" del Maestro). */
+    ivaTasa: 'numeric_mm7zaraf',
   },
   /* Columnas de COMPRAS en el board de Personas. Van aparte de `persona` a propósito: ese grupo se
      pide entero en la búsqueda de proveedores, y éstas sólo las necesitan las pantallas de compras. */

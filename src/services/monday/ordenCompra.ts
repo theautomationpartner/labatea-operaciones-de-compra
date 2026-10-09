@@ -9,7 +9,7 @@
  *      pendientes de RECEPCIÓN y de FACTURA (uno por subelemento). Confirmado el registro, se
  *      disparan las dos a la vez y SIN esperarlas.
  */
-import { envasesDe, resumenCompra, totalLinea } from '@/lib/compras'
+import { envasesDe, ivaLinea, ivaOrden, resumenCompra, totalLinea } from '@/lib/compras'
 import { round2 } from '@/lib/format'
 import { numeroSinPrefijo } from '@/lib/ordenDoc'
 import type { Comprador, Contacto, LineaCompra, MedioEnvio, Proveedor } from '@/types'
@@ -146,6 +146,7 @@ const descuentoTotal = (descuentos: readonly number[]): number =>
 function valoresDelSubitem(linea: LineaCompra, unidades: Map<string, number>) {
   const p = linea.producto
   const unidad = unidades.get(p.unidadCompra.trim().toLowerCase())
+  const iva = ivaLinea(p, linea.cantidad)
   /* Envases × precio = total: la cabecera espeja el total. El precio es el costo final del Maestro,
      que es por ENVASE. */
   return {
@@ -161,6 +162,11 @@ function valoresDelSubitem(linea: LineaCompra, unidades: Map<string, number>) {
     [COL.ordenCompraSub.precioUnitario]: round2(p.precioUnitario),
     [COL.ordenCompraSub.descuento]: descuentoTotal(p.descuentos),
     [COL.ordenCompraSub.bonifMercaderia]: p.bonifMercaderia,
+    /* El IVA del producto en pesos. Sin alícuota cargada en el Maestro, la columna queda vacía (no
+       se escribe un 0 que no se sabe). */
+    ...(iva !== null ? { [COL.ordenCompraSub.iva]: iva } : {}),
+    // La alícuota aplicada (21, 10,5…), tal cual el Maestro. Sin alícuota cargada, vacía.
+    ...(p.iva !== null ? { [COL.ordenCompraSub.ivaTasa]: p.iva } : {}),
     // La orden nace sin nada recibido.
     [COL.ordenCompraSub.cantRecibida]: 0,
     [COL.ordenCompraSub.estadoRecepcion]: { index: ESTADO_RECEPCION_SUB_INDEX.pendiente },
@@ -211,6 +217,8 @@ export async function registrarOrdenCompra(d: DatosOrdenCompra): Promise<OrdenCo
     [COL.ordenCompra.proveedor]: { item_ids: [Number(d.proveedor.id)] },
     [COL.ordenCompra.fechaEmision]: { date: isoDe(d.fechaEmision) },
     [COL.ordenCompra.total]: resumen.total,
+    // El IVA total de la orden: la suma del IVA de sus productos.
+    [COL.ordenCompra.iva]: ivaOrden(d.lineas),
     [COL.ordenCompra.totalEnvases]: resumen.envases,
     [COL.ordenCompra.totalUnidades]: resumen.unidades,
     [COL.ordenCompra.medioEnvio]: { ids: MEDIO_ENVIO_IDS[d.medioEnvio] },

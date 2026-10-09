@@ -7,10 +7,11 @@ import {
   envaseModificado,
   envasesDe,
   formatoEnvases,
+  ivaLinea,
   respetaEnvase,
   totalLinea,
 } from '@/lib/compras'
-import { money } from '@/lib/format'
+import { money, pctDec } from '@/lib/format'
 import type { LineaCompra } from '@/types'
 import { DetalleCosto } from './DetalleCosto'
 import { MAX_QBOX, QboxNumero } from './QboxNumero'
@@ -47,9 +48,9 @@ export function TablaProductos({
 }: TablaProductosProps) {
   const [expandidas, setExpandidas] = useState<ReadonlySet<string>>(new Set())
   /* Desplegable, N°, producto, unidad de compra, cant x envase, cant de envase, cant total a
-     pedir, costo de reposición, subtotal y acciones. Es el `colSpan` de la fila desplegada: si se
+     pedir, costo final, IVA, subtotal y acciones. Es el `colSpan` de la fila desplegada: si se
      agrega o se quita una columna, hay que moverlo o el detalle deja de ocupar el ancho entero. */
-  const COLUMNAS = 10
+  const COLUMNAS = 11
 
   const toggle = (id: string) =>
     setExpandidas((prev) => {
@@ -74,6 +75,7 @@ export function TablaProductos({
             <th className="ta-c">Cant de Envase</th>
             <th className="ta-c">Cant Total a Pedir</th>
             <th className="ta-r">Costo Final</th>
+            <th className="ta-r">IVA</th>
             <th className="ta-r">Subtotal</th>
             <th className="ta-c">Acciones</th>
           </tr>
@@ -188,6 +190,22 @@ export function TablaProductos({
                   {/* Lo que cuesta UN envase, tal cual lo publica el Maestro. */}
                   <td className="ta-r" style={{ fontWeight: 600 }}>
                     {money(l.producto.costoReposicion)}
+                  </td>
+                  {/* IVA de la línea: el subtotal por la alícuota del producto ("✋IVA" del Maestro). */}
+                  <td className="ta-r" style={{ fontWeight: 600 }}>
+                    {(() => {
+                      const iva = ivaLinea(l.producto, l.cantidad)
+                      return iva === null ? (
+                        <span className="tabla-iva-falta" title="El producto no tiene el IVA cargado en el Maestro">
+                          —
+                        </span>
+                      ) : (
+                        <>
+                          {money(iva)}
+                          <span className="tabla-iva-pct">{pctDec(l.producto.iva ?? 0)}</span>
+                        </>
+                      )
+                    })()}
                   </td>
                   {/* Envases × costo del envase. Es el único valor que escala con la cantidad. */}
                   <td className="ta-r" style={{ fontWeight: 700 }}>

@@ -161,6 +161,8 @@ export interface Producto {
   descuentos: number[]
   /** "✋️Bonif En Mercaderia" en %. 0 = sin bonificación. */
   bonifMercaderia: number
+  /** "✋IVA" en % (21, 10,5…). `null` si el producto no lo tiene cargado. */
+  iva: number | null
   /** "✋Tipo Envase Compra": en qué se compra el producto (Kilos, Paquete, Frasco…). */
   unidadCompra: string
   /**

@@ -1127,3 +1127,15 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* IVA de la línea en la tabla de la orden: el importe y, debajo, la alícuota. */
+.tabla-iva-pct {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-gray);
+}
+.tabla-iva-falta {
+  color: var(--text-gray);
+  cursor: help;
+}

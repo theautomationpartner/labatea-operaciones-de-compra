@@ -49,6 +49,7 @@ const COLUMNAS_PRODUCTO = JSON.stringify([
   COL.producto.costoUnid,
   ...COL.producto.descuentos,
   COL.producto.bonifMercaderia,
+  COL.producto.iva,
   COL.producto.estado,
 ])
 
@@ -122,6 +123,8 @@ function mapProducto(item: MondayItem): Producto {
     precioUnitario: numCol(c[COL.producto.costoUnid]),
     descuentos: COL.producto.descuentos.map((id) => numCol(c[id])).filter((d) => d !== 0),
     bonifMercaderia: numCol(c[COL.producto.bonifMercaderia]),
+    // Vacío no es 0%: sin alícuota cargada, el IVA de la línea no se puede calcular.
+    iva: c[COL.producto.iva]?.text?.trim() ? numCol(c[COL.producto.iva]) : null,
     unidadCompra: valor(c[COL.producto.tipoEnvaseCompra]),
     cantXUnidad: numCol(c[COL.producto.cantXEnvase]),
     /* Los proveedores son los ítems conectados. Sus IDs son lo que la orden compara para no mezclar

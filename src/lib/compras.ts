@@ -119,6 +119,17 @@ export function desgloseCosto(p: Producto): DesgloseCosto {
   }
 }
 
+/**
+ * IVA de la línea, en pesos: el subtotal (envases × costo final) por la alícuota del producto
+ * ("✋IVA" del Maestro). `null` si el producto no tiene la alícuota cargada.
+ */
+export const ivaLinea = (p: Producto, cantidad: number): number | null =>
+  p.iva === null ? null : round2((totalLinea(p, cantidad) * p.iva) / 100)
+
+/** IVA total de la orden: la suma del IVA de sus líneas (las que no tienen alícuota no suman). */
+export const ivaOrden = (lineas: readonly LineaCompra[]): number =>
+  round2(lineas.reduce((acc, l) => acc + (ivaLinea(l.producto, l.cantidad) ?? 0), 0))
+
 /** Totales de la orden. Sin descuentos ni IVA: una orden de compra pide mercadería a un precio. */
 export interface ResumenCompra {
   /** Cuántas líneas tiene la orden. */
