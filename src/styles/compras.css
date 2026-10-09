@@ -1016,9 +1016,8 @@
 /* El total de la orden después de editarla: el anterior tachado y el nuevo destacado. */
 .consultar-v .cons-total-orden {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
   margin: 12px 0 14px;
   padding: 10px 12px;
   border-radius: 8px;
@@ -1026,6 +1025,13 @@
   border: 1px solid var(--tint-summary-bd);
   font-size: 13px;
   text-align: left;
+}
+.consultar-v .cons-total-orden p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
 }
 .consultar-v .cons-total-orden strong {
   font-size: 15px;

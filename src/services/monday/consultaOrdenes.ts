@@ -135,6 +135,8 @@ export interface LineaOrden {
   cantXEnvase: number
   /** Costo de UN envase, tal como quedó en la orden ("🤖Costo"). */
   costo: number
+  /** "🤖IVA %" del subelemento (21, 10,5…). `null` si la línea no tiene alícuota cargada. */
+  ivaTasa: number | null
   /** Unidades pedidas: las del SUBELEMENTO, que es el que lleva el precio y el total de la línea. */
   pedida: number
   /** "🤖Q Pedida" del pendiente. Si no coincide con `pedida`, al guardar se corrige. `null` sin pendiente. */
@@ -154,6 +156,7 @@ const SUBITEMS_COLS = [
   COL.ordenCompraSub.cantRecibida,
   COL.ordenCompraSub.estadoRecepcion,
   COL.ordenCompraSub.precio,
+  COL.ordenCompraSub.ivaTasa,
 ]
 const PEND_COLS = [
   COL.pendRecibirCompra.producto,
@@ -236,6 +239,7 @@ export async function getLineasOrden(orden: Pick<OrdenEnCurso, 'id'>): Promise<L
       unidad: valor(c[COL.ordenCompraSub.unidadCompra]) || valor(pc[COL.producto.tipoEnvaseCompra]),
       cantXEnvase: cantXEnvase > 0 ? cantXEnvase : 1,
       costo: num(c[COL.ordenCompraSub.precio]?.text),
+      ivaTasa: c[COL.ordenCompraSub.ivaTasa]?.text?.trim() ? num(c[COL.ordenCompraSub.ivaTasa]?.text) : null,
       pedida,
       pedidaPend,
       recibida,
@@ -277,6 +281,17 @@ export const totalLineaOrden = (l: Pick<LineaOrden, 'pedida' | 'cantXEnvase' | '
 export const totalOrdenLineas = (lineas: readonly LineaOrden[]): number =>
   round2(lineas.reduce((acc, l) => acc + totalLineaOrden(l), 0))
 
+/**
+ * IVA de una línea en pesos: su importe × "🤖IVA %" de la línea. Mismo cálculo que al crear la orden
+ * (`ivaLinea` de `lib/compras`). `null` si la línea no tiene alícuota.
+ */
+export const ivaLineaOrden = (l: Pick<LineaOrden, 'pedida' | 'cantXEnvase' | 'costo' | 'ivaTasa'>): number | null =>
+  l.ivaTasa === null ? null : round2((totalLineaOrden(l) * l.ivaTasa) / 100)
+
+/** IVA total de la orden: la suma del IVA de sus líneas. */
+export const ivaOrdenLineas = (lineas: readonly LineaOrden[]): number =>
+  round2(lineas.reduce((acc, l) => acc + (ivaLineaOrden(l) ?? 0), 0))
+
 export interface CambioCantidad {
   linea: LineaOrden
   /** Nuevas unidades pedidas. */
@@ -285,10 +300,10 @@ export interface CambioCantidad {
 
 /**
  * Reescribe lo PEDIDO de cada producto editado, en UNA sola mutación:
- *   · el subelemento de la orden: unidades, envases y total de la línea (envases × costo): editar la
- *     cantidad cambia el importe de la línea;
+ *   · el subelemento de la orden: unidades, envases, total de la línea (envases × costo) e IVA $ (el
+ *     total × su "🤖IVA %"): editar la cantidad cambia el importe y el IVA de la línea;
  *   · el pendiente de recibir de ESE producto: "🤖Q Pedida" con las mismas unidades;
- *   · la cabecera de la orden: total, envases y unidades, recalculados con todas las líneas.
+ *   · la cabecera de la orden: total, IVA $, envases y unidades, recalculados con todas las líneas.
  * Devuelve las líneas ya editadas.
  */
 export async function editarCantidadesOrden(
@@ -317,6 +332,8 @@ export async function editarCantidadesOrden(
       [COL.ordenCompraSub.cantTotal]: l.pedida,
       [COL.ordenCompraSub.cantEnvases]: envases(l),
       [COL.ordenCompraSub.total]: totalDe(l),
+      // Sin alícuota cargada la columna no se toca, igual que al crear la orden.
+      ...(l.ivaTasa !== null ? { [COL.ordenCompraSub.iva]: ivaLineaOrden(l) } : {}),
     })
     if (l.pendId) {
       raices.push(
@@ -332,6 +349,7 @@ export async function editarCantidadesOrden(
   variables.oid = orden.id
   variables.ocv = JSON.stringify({
     [COL.ordenCompra.total]: totalOrdenLineas(nuevas),
+    [COL.ordenCompra.iva]: ivaOrdenLineas(nuevas),
     [COL.ordenCompra.totalEnvases]: nuevas.reduce((acc, l) => acc + envases(l), 0),
     [COL.ordenCompra.totalUnidades]: nuevas.reduce((acc, l) => acc + l.pedida, 0),
   })

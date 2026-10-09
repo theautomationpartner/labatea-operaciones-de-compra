@@ -13,6 +13,8 @@ import {
   firma,
   getLineasOrden,
   getOrdenesEnCurso,
+  ivaLineaOrden,
+  ivaOrdenLineas,
   totalLineaOrden,
   totalOrdenLineas,
   urlPdfOrden,
@@ -44,9 +46,11 @@ type Ventana =
 
 /** Lo que dejó la edición: cada producto editado con su nuevo importe, y el total de la orden. */
 interface ResumenEdicion {
-  productos: { subId: string; nombre: string; antes: number; ahora: number; importe: number }[]
+  productos: { subId: string; nombre: string; antes: number; ahora: number; importe: number; iva: number | null }[]
   totalAntes: number
   total: number
+  ivaAntes: number
+  iva: number
 }
 
 /** Cantidades pedidas en edición: `subId` → lo escrito. */
@@ -306,10 +310,19 @@ export function ConsultarOrdenesView() {
           .filter(({ linea, pedida }) => pedida !== linea.pedida)
           .map(({ linea, pedida }) => {
             const nueva = nuevas.find((l) => l.subId === linea.subId)!
-            return { subId: linea.subId, nombre: linea.nombre, antes: linea.pedida, ahora: pedida, importe: totalLineaOrden(nueva) }
+            return {
+              subId: linea.subId,
+              nombre: linea.nombre,
+              antes: linea.pedida,
+              ahora: pedida,
+              importe: totalLineaOrden(nueva),
+              iva: ivaLineaOrden(nueva),
+            }
           }),
         totalAntes: totalOrdenLineas(lineas),
         total: totalOrdenLineas(nuevas),
+        ivaAntes: ivaOrdenLineas(lineas),
+        iva: ivaOrdenLineas(nuevas),
       }
       setVentana({ tipo: 'enviar', orden: o, regenerada, resumen })
     } catch (e) {
@@ -868,6 +881,7 @@ function ModalEnviarEditada({
               <th>Producto</th>
               <th className="ta-c">Cantidad pedida</th>
               <th className="ta-r">Nuevo importe</th>
+              <th className="ta-r">Nuevo IVA</th>
             </tr>
           </thead>
           <tbody>
@@ -882,20 +896,30 @@ function ModalEnviarEditada({
                 <td className="ta-r">
                   <strong>{money(p.importe)}</strong>
                 </td>
+                <td className="ta-r">{p.iva === null ? <span className="ant-sd">Sin IVA</span> : money(p.iva)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      <p className="cons-total-orden">
-        <span>Nuevo importe total de la orden</span>
-        <span>
-          {resumen.totalAntes !== resumen.total && (
-            <span className="cons-total-antes">{money(resumen.totalAntes)}</span>
-          )}
-          <strong>{money(resumen.total)}</strong>
-        </span>
-      </p>
+      <div className="cons-total-orden">
+        <p>
+          <span>Nuevo importe total de la orden</span>
+          <span>
+            {resumen.totalAntes !== resumen.total && (
+              <span className="cons-total-antes">{money(resumen.totalAntes)}</span>
+            )}
+            <strong>{money(resumen.total)}</strong>
+          </span>
+        </p>
+        <p>
+          <span>Nuevo IVA total de la orden</span>
+          <span>
+            {resumen.ivaAntes !== resumen.iva && <span className="cons-total-antes">{money(resumen.ivaAntes)}</span>}
+            <strong>{money(resumen.iva)}</strong>
+          </span>
+        </p>
+      </div>
       ¿Querés enviarle la orden de compra editada a <strong>{orden.proveedorNombre}</strong>?
     </Modal>
   )

@@ -52,6 +52,7 @@ export async function regenerarPdfOrden(
       producto: {
         ...producto,
         costoReposicion: l.costo || producto.costoReposicion,
+        iva: l.ivaTasa ?? producto.iva,
         cantXUnidad: l.cantXEnvase,
       },
       cantidad: l.pedida,
