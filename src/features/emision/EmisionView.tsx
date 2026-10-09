@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AvisoModal } from '@/components/ui/AvisoModal'
 import { ModalCargando } from '@/components/ui/ModalCargando'
+import { OperacionFinalizada } from '@/components/ui/OperacionFinalizada'
 import { EnviarDocumento } from '@/features/shared/EnviarDocumento'
 import { PasoHeader, PasoTitulo } from '@/features/shared/PasoHeader'
 import { useBloqueoCredito } from '@/features/shared/useBloqueoCredito'
@@ -59,6 +60,10 @@ export function EmisionView() {
   const [error, setError] = useState<string | null>(null)
   // Registro en Monday en curso: tapa la pantalla con la ventana de espera.
   const [registrando, setRegistrando] = useState(false)
+  /* La orden quedó registrada: se muestra el cierre (el tilde verde) y la app vuelve sola al inicio. */
+  const [finalizada, setFinalizada] = useState(false)
+  // Al terminar el cierre: la app vuelve al inicio, lista para la próxima operación.
+  const volverAlInicio = useCallback(() => dispatch({ type: 'reset' }), [dispatch])
   // El registro falló: se ofrece reintentarlo desde el pie.
   const [errorRegistro, setErrorRegistro] = useState<string | null>(null)
   // Si se sale del paso mientras se espera, no actualizamos estado desmontado.
@@ -167,6 +172,8 @@ export function EmisionView() {
       // Registrada: se disparan los pendientes de recepción y de factura, sin esperarlos.
       pendientes.disparar(registrada.id)
       setRegistrando(false)
+      // Registrada: cierre automático y vuelta al inicio, sin que el usuario tenga que finalizar.
+      setFinalizada(true)
     } catch {
       if (!activo.current) return
       setRegistrando(false)
@@ -263,6 +270,8 @@ export function EmisionView() {
           detalle="Estamos registrando la orden de compra junto a sus productos y su PDF. Esperá unos segundos."
         />
       )}
+
+      {finalizada && <OperacionFinalizada texto="Orden de compra registrada" onFin={volverAlInicio} />}
 
       {errorRegistro && (
         <AvisoModal titulo="No se pudo completar el registro" onClose={() => setErrorRegistro(null)}>
