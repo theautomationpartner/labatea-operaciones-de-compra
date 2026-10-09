@@ -1,0 +1,1013 @@
+/* ACTUALIZAR PRECIOS (etapa 2): el selector de la forma de actualizar, el recuadro de arrastrar y
+   soltar de la lista, la tabla de productos y sus ventanas. */
+
+.precios-v {
+  /* Las del recuadro de arrastrar y soltar (cobro.css de La Batea), con sus mismos valores. */
+  --c-bg-input: #ffffff;
+  --c-text-main: #1f2937;
+  --c-text-secondary: #667085;
+  --c-primary: #0052cc;
+  --c-primary-hover: #0043a6;
+  --c-success: #00c875;
+  --c-danger: #e44258;
+  --c-warning: #fdab3d;
+  --c-radius-lg: 12px;
+  /* Un renglón de la tabla: la tabla mide SIEMPRE 10 de éstos. */
+  --tp-fila: 54px;
+
+  /* Mismo contenedor que las demás etapas (`.cliente-v2`, `.productos-v2`, `.consultar-v`): ancho
+     máximo centrado y el padding lateral que compensa el sangrado de la barra de contexto. */
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ════════════════════ Forma de actualizar ════════════════════ */
+/* La caja es `.cfgbox` (views.css), la misma de "Tipo de venta" en la VENTA, a todo el ancho de la
+   etapa. */
+.precios-modo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  margin-bottom: 20px;
+}
+.precios-cfg {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.precios-v .precios-bloque {
+  margin-bottom: 20px;
+}
+.precios-pct {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.precios-pct .precios-input {
+  padding-right: 28px;
+}
+.precios-pct-signo {
+  position: absolute;
+  right: 10px;
+  font-weight: 700;
+  color: var(--text-gray);
+  pointer-events: none;
+}
+
+/* ════════════════════ Carga del Excel: recuadro + datos de la actualización ════════════════════ */
+/* UN solo bloque partido al medio: el recuadro de carga a la izquierda y los datos de la
+   actualización a la derecha, 50% y 50%, a la misma altura (la fila del grid se estira y las dos
+   mitades la llenan). Los selectores llevan `.precios-v` delante para ganarle a las medidas fijas
+   del recuadro (500 × 300), que se declaran más abajo. */
+.precios-v .precios-carga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+.precios-v .precios-carga > .cobro-lector {
+  width: auto;
+  max-width: none;
+  height: auto;
+  min-height: 320px;
+}
+@media (max-width: 900px) {
+  .precios-v .precios-carga {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Lo que va DENTRO del recuadro debajo de la cara: la barra de progreso. No intercepta el click
+   (el recuadro entero sigue siendo la zona de carga). */
+:is(.precios-v, .comprobante-v) .cobro-lector-extra {
+  position: relative;
+  width: min(520px, 92%);
+  font-size: 13px;
+  pointer-events: none;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-extra .pg {
+  text-align: left;
+}
+
+/* Datos de la actualización (se completan solos) */
+.pf-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 4px 4px 0;
+}
+.pf-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.pf-titulo i {
+  color: var(--primary-blue);
+}
+.pf-datos {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 18px;
+}
+.pf-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f8;
+  font-size: 13px;
+}
+.pf-fila dt {
+  flex: 0 0 auto;
+  color: #667085;
+}
+.pf-fila dd {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: right;
+}
+.pf-fila dd.pf-ok {
+  color: var(--green-dark);
+}
+.pf-ver {
+  margin-top: auto;
+  width: 100%;
+  justify-content: center;
+}
+
+/* ════════════════════ Ventana ancha: "Productos a actualizar en el maestro" ════════════════════ */
+.modal-box.modal-box--amplio {
+  width: min(1420px, 96vw);
+  max-height: 94vh;
+  overflow-y: auto;
+  text-align: left;
+}
+.modal-box--amplio .modal-title {
+  text-align: center;
+}
+.modal-box--amplio .modal-body {
+  color: inherit;
+}
+.modal-box--amplio .tp-card {
+  margin-bottom: 0;
+  box-shadow: none;
+}
+.modal-box--amplio .modal-actions {
+  justify-content: center;
+}
+
+/* ════════════════════ Barra de progreso (`BarraProgreso`) ════════════════════ */
+/* Rótulo chico arriba, riel fino y el porcentaje a la derecha. El avance es índigo mientras corre y
+   pasa a verde al terminar. */
+.pg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pg-etiqueta {
+  font-size: 12.5px;
+  color: #667085;
+}
+.pg-fila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.pg-riel {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9ecf5;
+  /* Safari recorta mal el hijo transformado sin esto. */
+  transform: translateZ(0);
+}
+.pg-avance {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: #4338ca;
+  transition:
+    transform 0.4s cubic-bezier(0.65, 0, 0.35, 1),
+    background 0.3s;
+}
+.pg--completa .pg-avance {
+  background: var(--green, #00c875);
+}
+.pg-pct {
+  min-width: 40px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475467;
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg-avance {
+    transition: none;
+  }
+}
+
+/* ════════════════════ Arrastrar y soltar (cobro CONTADO / carga de OP) ════════════════════ */
+/* Lo comparten ACTUALIZAR PRECIOS y CARGAR COMPROBANTE DE COMPRA (`.comprobante-v`, comprobante.css). */
+:is(.precios-v, .comprobante-v) .cobro-lector {
+  position: relative;
+  width: 500px;
+  height: 300px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px 28px;
+  border: 2px dashed var(--c-primary);
+  border-radius: var(--c-radius-lg);
+  background: #f2f7ff;
+  color: var(--c-primary);
+  font-size: 46px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.12s;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-hit:hover:not(:disabled) {
+  background: rgba(0, 82, 204, 0.04);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-hit:disabled {
+  cursor: default;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-hit:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: var(--c-radius-lg);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector.is-over {
+  border-style: solid;
+  background: #e4eeff;
+  transform: scale(1.01);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector--procesando,
+:is(.precios-v, .comprobante-v) .cobro-lector--listo,
+:is(.precios-v, .comprobante-v) .cobro-lector--advertencia,
+:is(.precios-v, .comprobante-v) .cobro-lector--error {
+  border-style: solid;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector--procesando {
+  background: var(--c-bg-input);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector--listo {
+  border-color: var(--c-success);
+  background: #f2fbf7;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector--advertencia {
+  border-color: var(--c-warning);
+  background: #fffaf0;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector--error {
+  border-color: var(--c-danger);
+  background: #fff6f6;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara--listo {
+  color: var(--c-success);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara--listo .cobro-lector-titulo {
+  color: #0b7a4b;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara--advertencia {
+  color: var(--c-warning);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara--advertencia .cobro-lector-titulo {
+  color: #b26a00;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara--error {
+  color: var(--c-danger);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-cara--error .cobro-lector-titulo {
+  color: #c0273c;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-text-main);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-consigna {
+  max-width: 340px;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--c-text-secondary);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-spin {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border: 3px solid #d5dceb;
+  border-top-color: var(--c-primary);
+  border-radius: 50%;
+  animation: cobro-lector-giro 0.7s linear infinite;
+}
+@keyframes cobro-lector-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-archivo {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--c-text-secondary);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+  color: var(--c-text-main);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-accion {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--c-primary);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-accion:hover {
+  color: var(--c-primary-hover);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-accion--quitar {
+  color: var(--c-danger);
+}
+:is(.precios-v, .comprobante-v) .cobro-lector-accion--quitar:hover {
+  color: #b8202f;
+}
+
+/* ════════════════════ Tabla de productos ════════════════════ */
+/* Tarjeta, cabecera y filas con los valores de la tabla de "Consultar órdenes de compra"
+   (compras.css · `.consultar-v .cobro-static`, `.cobro-card`, `.ant-tabla`). */
+.precios-v .tp-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0 0 20px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+}
+/* El buscador de "Consultar órdenes de compra" (compras.css · `.consultar-v .search-*`), con sus
+   mismos valores: alto 46, borde #e2e8f0 que pasa al violeta de marca con el foco, lupa índigo y el
+   renglón de ayuda con la cuenta. */
+.tp-buscador {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 14px;
+}
+.tp-buscador .search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  height: 46px;
+}
+.tp-buscador .search-wrapper:focus-within {
+  border-color: #6c4cf1;
+}
+.tp-buscador .search-wrapper > svg {
+  position: absolute;
+  left: 12px;
+  color: #6366f1;
+}
+.tp-buscador .search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 16px 0 40px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  color: #1f2937;
+}
+.tp-buscador .search-input::placeholder {
+  color: #64748b;
+}
+.tp-buscador .search-helper {
+  display: block;
+  min-height: 18px;
+  line-height: 18px;
+  font-size: 13px;
+  color: #64748b;
+  padding-left: 4px;
+}
+.tp-titulo {
+  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.tp-titulo > i {
+  color: var(--primary-blue);
+}
+.tp-cuenta {
+  padding: 1px 9px;
+  border-radius: 10px;
+  background: #e6f0ff;
+  color: var(--primary-blue);
+  font-size: 12px;
+}
+
+/* El alto no depende de las filas: 10 renglones siempre. Si no entra a lo ancho, scrollea la tabla,
+   no la página. */
+.tp-wrap {
+  overflow-x: auto;
+}
+.tp-tabla {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13.5px;
+}
+.tp-tabla thead th {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e4e7ec;
+  font-size: 12px;
+  font-weight: 600;
+  color: #667085;
+  text-align: left;
+  white-space: nowrap;
+}
+.tp-tabla td {
+  height: var(--tp-fila);
+  padding: 0 12px;
+  border-bottom: 1px solid #f1f3f8;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tp-tabla .ta-r {
+  text-align: right;
+}
+.tp-tabla .ta-c {
+  text-align: center;
+}
+.tp-w-img {
+  width: 58px;
+}
+.tp-w-nombre {
+  width: 24%;
+}
+.tp-w-cod {
+  width: 96px;
+}
+.tp-w-precio {
+  width: 112px;
+}
+.tp-w-var {
+  width: 150px;
+}
+.tp-w-desc {
+  width: 96px;
+}
+.tp-w-bonif {
+  width: 86px;
+}
+.tp-w-accion {
+  width: 100px;
+}
+.tp-fila:not(.tp-fila--vacia):not(.tp-fila--skeleton):hover td {
+  background: #e2ecfc;
+}
+.tp-img {
+  display: block;
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #eceef3;
+  background: #fff;
+}
+.tp-img--vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c3c6d4;
+  background: #f7f8fa;
+  font-size: 15px;
+}
+.tp-nombre {
+  font-weight: 700;
+  color: #0f172a;
+}
+.tp-tabla .comp-cod {
+  color: var(--primary-blue);
+  font-weight: 700;
+}
+/* Precio anterior cuando hay uno nuevo: tachado y apagado, al lado del nuevo en verde. */
+.tp-tachado {
+  color: #98a2b3;
+  text-decoration: line-through;
+  text-decoration-color: #e2445c;
+  text-decoration-thickness: 1.5px;
+}
+.tp-nuevo {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+/* El producto cambió condiciones pero no precio. */
+.tp-igual {
+  font-size: 12px;
+  color: var(--text-gray);
+}
+/* Fila con cambios: un verde apenas perceptible para encontrarla de un vistazo. */
+.tp-fila--cambio td {
+  background: #f4fbf7;
+}
+.tp-fila--cambio:hover td {
+  background: #e2ecfc !important;
+}
+.tp-destacado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  background: #e3f6ec;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 700;
+}
+.tp-destacado i {
+  color: var(--green-dark) !important;
+}
+.tp-var {
+  font-variant-numeric: tabular-nums;
+}
+.tp-var--sube {
+  color: var(--red);
+  font-weight: 600;
+}
+.tp-var--baja {
+  color: var(--green-dark);
+  font-weight: 600;
+}
+/* "Precios": el botón "Ver Orden" de la misma tabla (`.consultar-v .ant-ver`). */
+.tp-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #0052cc;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tp-ver:hover {
+  background: #f3f8ff;
+}
+.tp-mensaje {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-gray);
+  white-space: normal;
+}
+.tp-skel {
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #f0f1f4 25%, #e6e8ee 37%, #f0f1f4 63%);
+  background-size: 400% 100%;
+  animation: tp-brillo 1.4s ease infinite;
+}
+@keyframes tp-brillo {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Paginador: el de "Consultar órdenes de compra" (compras.css · `.consultar-v .obras-pager`), con sus
+   mismos valores. */
+.precios-v .obras-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #64748b;
+}
+.precios-v .obras-pager-info {
+  margin-right: auto;
+}
+.precios-v .obras-pager-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.precios-v .obras-pager-btn:hover:not(:disabled) {
+  background: #f5f6f8;
+}
+.precios-v .obras-pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ════════════════════ Pie: "Volver" ════════════════════ */
+/* El mismo pie y el mismo botón que las etapas de Productos y Emisión (`.productos-v2 .page-footer`,
+   `.emision-v2 .btn-volver`). */
+.precios-v .page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  margin-top: 16px;
+  margin-bottom: 48px;
+}
+.precios-v .btn-volver {
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1f2937;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.precios-v .btn-volver:hover:not(:disabled) {
+  background: #f4f5f7;
+}
+.precios-v .btn-volver:disabled {
+  color: #a1a3b1;
+  cursor: not-allowed;
+}
+.precios-v .cfg-sel:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ════════════════════ Ventanas ════════════════════ */
+.modal-icon--info {
+  color: var(--primary-blue);
+}
+.pv-producto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pv-producto .comp-cod {
+  color: var(--primary-blue);
+  font-weight: 700;
+}
+.pv-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.pv-tabla th {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eceef3;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-gray);
+  text-align: left;
+}
+.pv-tabla td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #f0f1f4;
+}
+.pv-tabla .ta-r {
+  text-align: right;
+}
+.pv-lista {
+  display: inline-block;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #e6f0ff;
+  color: var(--primary-blue);
+  font-weight: 700;
+  text-align: center;
+}
+.pv-nota {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-gray);
+}
+
+.liq-lista {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  text-align: left;
+  border: 1px solid #eceef3;
+  border-radius: 8px;
+}
+.liq-lista li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #f0f1f4;
+  font-size: 13px;
+}
+.liq-lista li:last-child {
+  border-bottom: none;
+}
+.liq-nombre {
+  font-weight: 600;
+}
+.liq-label {
+  flex: 0 0 auto;
+  padding: 3px 10px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+/* Los colores de las etiquetas del tablero: naranja (parcial) y rojo (sin liquidar). */
+.liq-label--parcial {
+  background: #fdab3d;
+}
+.liq-label--sin {
+  background: #e2445c;
+}
+
+/* ════════════════════ Etapa 3 · Resumen y Envío ════════════════════ */
+/* La etapa usa las clases de la emisión de la orden (`.emision-v2`); sólo se agrega el margen de los
+   avisos dentro de la card de resumen. */
+.ra-avisos {
+  margin: 14px 0 0;
+}
+
+/* ════════════════════ "Actualización finalizada" (`OperacionFinalizada`) ════════════════════ */
+/* La ventana con la que cierra el registro de actividades de "Operaciones de venta"
+   (actividad.css · `.act-exito*`), con sus mismos valores. */
+.act-exito {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  animation: act-exito-fondo 0.25s ease;
+}
+@keyframes act-exito-fondo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.act-exito-caja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 40px 56px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+}
+.act-exito-svg {
+  width: 84px;
+  height: 84px;
+}
+.act-exito-aro {
+  fill: none;
+  stroke: #00c875;
+  stroke-width: 3;
+  stroke-dasharray: 145;
+  stroke-dashoffset: 145;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  animation: act-trazar 0.75s ease-out forwards;
+}
+.act-exito-tilde {
+  fill: none;
+  stroke: #00c875;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: act-trazar 0.45s 0.6s ease-out forwards;
+}
+@keyframes act-trazar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.act-exito-txt {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  /* Entra después del tilde: primero el gesto, después la palabra. */
+  opacity: 0;
+  animation: act-exito-texto 0.4s 0.95s ease forwards;
+}
+@keyframes act-exito-texto {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Sin movimiento: el tilde y el texto ya están dibujados desde el primer cuadro. */
+@media (prefers-reduced-motion: reduce) {
+  .act-exito-aro,
+  .act-exito-tilde {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+  .act-exito-txt {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* ════════════════════ Por porcentaje: el panel en lugar del recuadro de carga ════════════════════ */
+/* Mide y se ubica como el recuadro de "Cargar Excel" (la mitad izquierda del bloque, a la altura de
+   los datos), con borde sólido: acá no se suelta nada. */
+.pp-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 320px;
+  padding: 24px 28px;
+  box-sizing: border-box;
+  border: 2px solid #d5dceb;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: center;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.pp-panel--activo {
+  border-color: #0052cc;
+  background: #fff;
+}
+.pp-ic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #e6f0ff;
+  color: #0052cc;
+  font-size: 22px;
+}
+.pp-titulo {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.pp-consigna {
+  max-width: 420px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #667085;
+}
+.pp-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.pp-error {
+  min-height: 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #c0273c;
+}
+
+/* La barra de progreso de la escritura en Monday, debajo de "Confirmar Actualización". */
+.modal-pie {
+  width: min(560px, 100%);
+  margin: 18px auto 0;
+  text-align: left;
+}
+
+/* La actualización ya se aplicó: la etapa queda de consulta. */
+.precios-aplicada {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #f2fbf7;
+  border: 1px solid #b9ebd2;
+  color: #0b7a4b;
+  font-size: 13px;
+}

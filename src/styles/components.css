@@ -115,6 +115,16 @@
   box-sizing: border-box;
   justify-content: space-between;
 }
+/* El selector de operación es más ancho: 320px entra "CONSULTAR ÓRDENES DE COMPRA" —la más larga—
+   en un solo renglón, en el botón y en la lista. El `nowrap` asegura que ninguna opción se parta. */
+.dd--operacion,
+.dd--operacion .selbox--fix {
+  width: 320px;
+  max-width: 100%;
+}
+.dd--operacion .dditem {
+  white-space: nowrap;
+}
 .selbox--btn {
   cursor: pointer;
 }

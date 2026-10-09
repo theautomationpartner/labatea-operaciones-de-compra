@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        @font-face {
+          font-family: "Inter";
+          src: url("assets/fonts/inter-latin-500-normal.woff2") format("woff2");
+          font-weight: 500;
+        }
+        @font-face {
+          font-family: "Inter";
+          src: url("assets/fonts/inter-latin-700-normal.woff2") format("woff2");
+          font-weight: 700;
+        }
+        @font-face {
+          font-family: "Inter";
+          src: url("assets/fonts/inter-latin-800-normal.woff2") format("woff2");
+          font-weight: 800;
+        }
+        #root {
+          position: absolute;
+          inset: 0;
+          font-family: "Inter", sans-serif;
+        }
+        #apertura-fondo {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(160deg, #ffffff 0%, #ffffff 45%, #eef5ff 100%);
+        }
+        #apertura-franja {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 10px;
+          display: flex;
+        }
+        #apertura-franja span {
+          display: block;
+          flex: 1;
+          height: 100%;
+        }
+        #apertura-contenido {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0;
+        }
+        #apertura-logo {
+          display: block;
+          width: 300px;
+          height: 215px;
+          object-fit: contain;
+          margin-bottom: 28px;
+        }
+        #apertura-titulo {
+          font-size: 88px;
+          font-weight: 800;
+          letter-spacing: -0.03em;
+          color: #1f2433;
+          line-height: 1.05;
+        }
+        #apertura-sub {
+          margin-top: 18px;
+          font-size: 30px;
+          font-weight: 500;
+          color: #4a4d5c;
+        }
+        #apertura-etapas {
+          margin-top: 54px;
+          display: flex;
+          align-items: center;
+          gap: 18px;
+        }
+        .apertura-etapa {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 26px 14px 14px;
+          border-radius: 999px;
+          background: #ffffff;
+          border: 2px solid #bcd6f5;
+          font-size: 26px;
+          font-weight: 700;
+          color: #1f2433;
+        }
+        .apertura-num {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: #0073ea;
+          color: #ffffff;
+          font-size: 22px;
+          font-weight: 800;
+        }
+        .apertura-flecha {
+          display: block;
+          width: 40px;
+          height: 3px;
+          background: #bcd6f5;
+        }
+      </style>
+
+      <div id="root" data-composition-id="apertura" data-width="1920" data-height="1080">
+        <div id="apertura-fondo">
+          <div id="apertura-franja"><span style="background: #0073ea"></span><span style="background: #6200ee"></span><span style="background: #00c875"></span></div>
+        </div>
+        <div id="apertura-contenido">
+          <img id="apertura-logo" src="assets/logo-la-batea.png" alt="La Batea" />
+          <h1 id="apertura-titulo">Cómo crear una orden de compra</h1>
+          <p id="apertura-sub">La Batea Compras · Operaciones de compra</p>
+          <div id="apertura-etapas">
+            <div class="apertura-etapa" id="apertura-e1"><span class="apertura-num">1</span>Seleccionar proveedor</div>
+            <span class="apertura-flecha" id="apertura-f1"></span>
+            <div class="apertura-etapa" id="apertura-e2"><span class="apertura-num">2</span>Seleccionar productos</div>
+            <span class="apertura-flecha" id="apertura-f2"></span>
+            <div class="apertura-etapa" id="apertura-e3"><span class="apertura-num">3</span>Emitir y enviar</div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const tl = gsap.timeline({ paused: true });
+        tl.fromTo("#apertura-franja span", { scaleX: 0, transformOrigin: "0% 50%" }, { scaleX: 1, duration: 0.7, stagger: 0.12, ease: "power3.out" }, 0.3);
+        tl.fromTo("#apertura-logo", { opacity: 0, scale: 0.88 }, { opacity: 1, scale: 1, duration: 0.7, ease: "back.out(1.6)" }, 0.5);
+        tl.fromTo("#apertura-titulo", { opacity: 0, y: 34 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" }, 0.75);
+        tl.fromTo("#apertura-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 0.95);
+        tl.fromTo(
+          ["#apertura-e1", "#apertura-f1", "#apertura-e2", "#apertura-f2", "#apertura-e3"],
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.45, stagger: 0.12, ease: "power2.out" },
+          1.2,
+        );
+        // El texto se va ANTES que el fondo; después el fondo se funde con la grabación.
+        tl.to("#apertura-contenido", { opacity: 0, y: -18, duration: 0.5, ease: "power2.in" }, 2.6);
+        tl.to("#apertura-fondo", { opacity: 0, duration: 0.9, ease: "power1.inOut" }, 3.2);
+        window.__timelines["apertura"] = tl;
+      </script>
+    </template>
+  </body>
+</html>

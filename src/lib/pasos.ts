@@ -8,6 +8,9 @@ export const ETAPA = {
   proveedor: 'Seleccionar Proveedor',
   productos: 'Seleccionar Productos',
   emitir: 'Emitir y Enviar',
+  precios: 'Actualizar Precios',
+  comprobantePrecios: 'Comprobante y Envío',
+  datosIniciales: 'Cargar Datos Iniciales',
 } as const
 
 /**
@@ -17,13 +20,30 @@ export const ETAPA = {
 export const PASOS_ORDEN_COMPRA = [ETAPA.proveedor, ETAPA.productos, ETAPA.emitir] as const
 
 /**
+ * El recorrido de ACTUALIZAR PRECIOS: tres etapas. La primera es la MISMA elección de proveedor de
+ * la orden de compra; la segunda, la actualización (por porcentaje o con la lista en Excel); la
+ * tercera, el comprobante de la actualización y su envío a Administración y Compras.
+ */
+export const PASOS_ACTUALIZAR_PRECIOS = [ETAPA.proveedor, ETAPA.precios, ETAPA.comprobantePrecios] as const
+
+/**
+ * El recorrido de CARGAR COMPROBANTE DE COMPRA. La primera etapa es la MISMA elección de proveedor
+ * de la orden de compra; la segunda, el tipo de comprobante y el archivo, con sus datos leídos.
+ *
+ * PENDIENTE DE DEFINICIÓN: lo que pasa después de cargar los datos iniciales.
+ */
+export const PASOS_COMPROBANTE_COMPRA = [ETAPA.proveedor, ETAPA.datosIniciales] as const
+
+/**
  * Los pasos que muestra el encabezado.
  *
- * PENDIENTE DE DEFINICIÓN: CARGAR FACTURA y CARGAR REMITO todavía no tienen recorrido propio y
- * comparten el de la orden de compra. Cuando se especifiquen, esta función se abre por operación
- * —igual que en la app de ventas— y el resto del header no se toca.
+ * PENDIENTE DE DEFINICIÓN: CARGAR REMITO todavía no tiene recorrido propio y comparte el de la orden
+ * de compra. Cuando se especifique, se suma acá —igual que en la app de ventas— y el resto del
+ * header no se toca.
  */
-export function pasosDe(_operacion: Operacion | null): readonly string[] {
+export function pasosDe(operacion: Operacion | null): readonly string[] {
+  if (operacion === 'ACTUALIZAR PRECIOS') return PASOS_ACTUALIZAR_PRECIOS
+  if (operacion === 'CARGAR COMPROBANTE DE COMPRA') return PASOS_COMPROBANTE_COMPRA
   return PASOS_ORDEN_COMPRA
 }
 
@@ -32,7 +52,9 @@ export function pasosDe(_operacion: Operacion | null): readonly string[] {
  * a la etapa a la que se navega al hacer clic en su círculo. Debe quedar sincronizada con `pasosDe`
  * (misma cantidad y orden).
  */
-export function pasosKeysDe(_operacion: Operacion | null): readonly Paso[] {
+export function pasosKeysDe(operacion: Operacion | null): readonly Paso[] {
+  if (operacion === 'ACTUALIZAR PRECIOS') return ['proveedor', 'precios', 'preciosComprobante']
+  if (operacion === 'CARGAR COMPROBANTE DE COMPRA') return ['proveedor', 'comprobante']
   return ['proveedor', 'productos', 'emision']
 }
 
@@ -51,7 +73,22 @@ export function indiceDePaso(paso: Paso, operacion: Operacion | null): number {
 
 /** Las opciones del selector de operación, en el orden en que se muestran. */
 export const OPERACIONES: readonly Operacion[] = [
-  'ORDEN DE COMPRA',
-  'CARGAR FACTURA',
+  'CREAR ORDEN DE COMPRA',
+  'CARGAR COMPROBANTE DE COMPRA',
   'CARGAR REMITO',
+  'CONSULTAR ÓRDENES DE COMPRA',
+  'ACTUALIZAR PRECIOS',
 ]
+
+/** Operaciones reservadas a Compras/Administración (ver `lib/permisos`). */
+export const OPERACIONES_RESTRINGIDAS: readonly Operacion[] = ['ACTUALIZAR PRECIOS']
+
+/**
+ * La pantalla en la que arranca cada operación al confirmarla. CONSULTAR ÓRDENES DE COMPRA es una
+ * pantalla única, sin stepper; el resto —ACTUALIZAR PRECIOS incluida— arranca por la elección del
+ * proveedor.
+ */
+export function pasoInicialDe(operacion: Operacion | null): Paso {
+  if (operacion === 'CONSULTAR ÓRDENES DE COMPRA') return 'consultar'
+  return 'proveedor'
+}

@@ -6,7 +6,6 @@ import { ETAPA, indiceDePaso, pasosDe } from '@/lib/pasos'
 import { ROTULO } from '@/lib/personas'
 import {
   MSG_SIN_CTA_CTE,
-  MSG_SOLO_CTA_CTE,
   proveedorSinCtaCte,
   rechazoAlSeleccionar,
   type RechazoProveedor,
@@ -18,7 +17,13 @@ import { BuscarProveedor, type BusquedaEstado } from './BuscarProveedor'
 import { ProveedorFicha } from './ProveedorFicha'
 
 /**
- * Etapa 1 de la ORDEN DE COMPRA: a quién se le compra.
+ * Etapa 1 de la ORDEN DE COMPRA —y de ACTUALIZAR PRECIOS y CARGAR COMPROBANTE DE COMPRA—: a quién
+ * se le compra.
+ *
+ * ACTUALIZAR PRECIOS y CARGAR COMPROBANTE DE COMPRA usan esta MISMA pantalla, con el mismo buscador,
+ * la misma ficha y la misma regla de selección (tiene que ser proveedor). Lo que no aplica son las
+ * validaciones de crédito y de cuenta corriente: ni actualizar su lista ni cargar un comprobante que
+ * él emitió le emite nada al proveedor.
  *
  * Es la misma pantalla que la etapa 1 de PAGOS, pieza por pieza —el buscador y la ficha son LOS
  * MISMOS componentes, con la misma consulta al mismo tablero— y con las MISMAS validaciones:
@@ -82,9 +87,9 @@ export function ProveedorView() {
   /**
    * Qué pasa cuando la búsqueda devuelve a alguien.
    *
-   * Acá se decide si esa persona ENTRA o no al estado, y por eso las dos reglas que dependen de
-   * QUIÉN es —que sea proveedor y que opere en cuenta corriente— se evalúan en este punto y no al
-   * intentar avanzar: a quien no sirve para esta operación no se le llega a mostrar ni un dato.
+   * Acá se decide si esa persona ENTRA o no al estado, y por eso la regla que depende de QUIÉN
+   * es —que sea proveedor— se evalúa en este punto y no al intentar avanzar: a quien no sirve para
+   * esta operación no se le llega a mostrar ni un dato. La condición de pago no restringe.
    *
    * Un rechazo NO descarta lo que ya estaba cargado: si venía operando con un proveedor válido,
    * ese sigue en pantalla. Buscar a alguien que no sirve es un intento fallido, no una orden de
@@ -100,17 +105,19 @@ export function ProveedorView() {
   }
 
   const indice = indiceDePaso('proveedor', operacion)
-  const SIGUIENTE = ETAPA.productos
+  const esPrecios = operacion === 'ACTUALIZAR PRECIOS'
+  const esComprobante = operacion === 'CARGAR COMPROBANTE DE COMPRA'
+  /* Sólo la orden de compra le emite algo al proveedor: las otras no validan crédito ni cuenta. */
+  const sinValidarEmision = esPrecios || esComprobante
+  const SIGUIENTE = esPrecios ? ETAPA.precios : esComprobante ? ETAPA.datosIniciales : ETAPA.productos
 
   /* El proveedor está confirmado: hay uno cargado y la búsqueda no está en curso ni terminó mal. */
   const proveedorListo = estadoBusqueda === 'idle' && !!proveedor
-  const bloqueado = personaBloqueada(proveedor)
-  /* Lo ÚNICO que queda por validar al avanzar. La condición de pago ya no se mira acá: un
-     proveedor que no opera en cuenta corriente nunca llegó al estado (ver `elegir`), así que
-     revisarla de nuevo sería preguntar por algo que no puede pasar. Ésta sí se queda: el proveedor
+  const bloqueado = !sinValidarEmision && personaBloqueada(proveedor)
+  /* Lo ÚNICO que queda por validar al avanzar, y sólo para los de cuenta corriente: el proveedor
      es válido, y lo que falta es un dato del SISTEMA que puede cargarse en Monday sin cambiar de
-     proveedor. */
-  const sinCtaCte = proveedorListo && proveedorSinCtaCte(proveedor)
+     proveedor. Uno de contado no necesita cuenta corriente para recibir la orden. */
+  const sinCtaCte = !sinValidarEmision && proveedorListo && proveedorSinCtaCte(proveedor)
 
   const continuar = () => {
     if (!proveedorListo) {
@@ -125,7 +132,7 @@ export function ProveedorView() {
       setAvisoSinCtaCte(true)
       return
     }
-    dispatch({ type: 'goto', paso: 'productos' })
+    dispatch({ type: 'goto', paso: esPrecios ? 'precios' : esComprobante ? 'comprobante' : 'productos' })
   }
 
   /* Por qué todavía no se puede avanzar. Se muestra en el footer, al lado del botón. */
@@ -147,7 +154,13 @@ export function ProveedorView() {
         <PasoTitulo
           numero={indice + 1}
           titulo={ETAPA.proveedor}
-          descripcion="Buscá al proveedor al que le vas a emitir la orden de compra. Los productos de la etapa siguiente van a ser sólo los suyos."
+          descripcion={
+            esPrecios
+              ? 'Buscá al proveedor cuya lista de precios vas a actualizar. En la etapa siguiente se trabaja sólo con sus productos.'
+              : esComprobante
+                ? 'Buscá al proveedor que emitió el comprobante de compra. En la etapa siguiente cargás el comprobante y sus datos.'
+                : 'Buscá al proveedor al que le vas a emitir la orden de compra. Los productos de la etapa siguiente van a ser sólo los suyos.'
+          }
         />
 
         {/* Buscador del proveedor: el MISMO componente del paso 1 de PAGOS. El responsable de la
@@ -221,21 +234,9 @@ export function ProveedorView() {
           faltantes={[rechazo.persona.name]}
           onClose={() => setRechazo(null)}
         >
-          La operación <strong>ORDEN DE COMPRA</strong> sólo puede emitirse a personas con la
+          La operación <strong>{operacion ?? 'CREAR ORDEN DE COMPRA'}</strong> sólo puede hacerse con personas con la
           categoría <strong>Proveedores</strong> en el sistema, y ésta no la tiene. Revisá su
           "✋Categoria" en el tablero de Personas, o buscá a otro {ROTULO.singular}.
-        </AvisoModal>
-      )}
-
-      {/* Es proveedor, pero su condición de pago no habilita la operación. Tampoco se carga: por
-          eso el nombre sale del rechazo y no del estado. */}
-      {rechazo?.motivo === 'condicion-de-pago' && (
-        <AvisoModal
-          titulo="La condición de pago no habilita la operación"
-          faltantes={[rechazo.persona.name]}
-          onClose={() => setRechazo(null)}
-        >
-          {MSG_SOLO_CTA_CTE}
         </AvisoModal>
       )}
 

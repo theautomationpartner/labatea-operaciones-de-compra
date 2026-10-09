@@ -14,7 +14,7 @@
  * LECTURA PURA. Este módulo no escribe una sola columna del tablero.
  */
 import type { CampoFiltro, Filtro, Producto } from '@/types'
-import { BOARDS, COL } from './columns'
+import { BOARDS, COL, PRODUCTO_ACTIVO_INDEX, TIPO_VENTA_CONSIGNADO } from './columns'
 import { byId, numCol, sumaMirror, valor, type MondayItem } from './parse'
 import { mondayApi } from './sdk'
 
@@ -46,6 +46,10 @@ const COLUMNAS_PRODUCTO = JSON.stringify([
   COL.producto.tipoEnvaseCompra,
   COL.producto.cantXEnvase,
   COL.producto.stock,
+  COL.producto.costoUnid,
+  ...COL.producto.descuentos,
+  COL.producto.bonifMercaderia,
+  COL.producto.estado,
 ])
 
 /**
@@ -79,6 +83,7 @@ const SELECCION_PRODUCTO = `
   column_values(ids: ${COLUMNAS_PRODUCTO}) {
     id text
     ... on FormulaValue { display_value }
+    ... on StatusValue { index }
     ... on MirrorValue { display_value }
     ... on BoardRelationValue {
       linked_items {
@@ -100,7 +105,10 @@ function mapProducto(item: MondayItem): Producto {
      las cantidades de stock. Viene anidado en la relación, así que no hay una segunda consulta. */
   const itemStock = c[COL.producto.stock]?.linked_items?.[0]
   const stock = itemStock?.column_values ? byId(itemStock) : {}
-  const proveedor = c[COL.producto.proveedor]?.linked_items?.[0]
+  /* Un producto puede estar asociado a VARIOS proveedores: se guardan todos los ids, y el primero
+     es el que se muestra. */
+  const proveedores = c[COL.producto.proveedor]?.linked_items ?? []
+  const proveedor = proveedores[0]
   return {
     // ID del ítem en Monday: lo necesita el subelemento de la orden para linkear el producto.
     id: item.id,
@@ -109,14 +117,24 @@ function mapProducto(item: MondayItem): Producto {
     /* "🤖Costo de Reposicion" (fórmula): el precio de UN ENVASE de compra. Se lee por
        `display_value`; en `text` las fórmulas vienen vacías. */
     costoReposicion: numCol(c[COL.producto.costoReposicion]),
+    /* Lo que compone ese costo: el precio de lista, los descuentos y la bonificación. Se muestran
+       en el "Detalle de Costo" de la carga. */
+    precioUnitario: numCol(c[COL.producto.costoUnid]),
+    descuentos: COL.producto.descuentos.map((id) => numCol(c[id])).filter((d) => d !== 0),
+    bonifMercaderia: numCol(c[COL.producto.bonifMercaderia]),
     unidadCompra: valor(c[COL.producto.tipoEnvaseCompra]),
     cantXUnidad: numCol(c[COL.producto.cantXEnvase]),
-    /* El proveedor es el ítem conectado. Su ID es lo que la orden compara para no mezclar
-       mercadería de dos proveedores; sin conexión queda null y el producto no es comprable. */
+    /* Los proveedores son los ítems conectados. Sus IDs son lo que la orden compara para no mezclar
+       mercadería de dos proveedores; sin conexión el producto no es comprable (salvo excepción). */
+    provIds: proveedores.map((p) => p.id),
     provId: proveedor?.id ?? null,
     provNombre: proveedor?.name ?? '',
-    provCod: valor(c[COL.producto.proveedorCodigo]),
+    /* El código del proveedor que se muestra: el primero de la mirror, que es el de `provNombre`. */
+    provCod: valor(c[COL.producto.proveedorCodigo]).split(',')[0].trim(),
     tipo: valor(c[COL.producto.tipoMercaderia]),
+    consignado: valor(c[COL.producto.tipoMercaderia]).trim().toUpperCase() === TIPO_VENTA_CONSIGNADO,
+    /* Sólo "Activo" (por índice): sin estado cargado o con cualquier otra etiqueta, no se pide. */
+    activo: c[COL.producto.estado]?.index === PRODUCTO_ACTIVO_INDEX,
     rubro: valor(c[COL.producto.rubro]),
     subrubro: valor(c[COL.producto.subrubro]),
     categoria: valor(c[COL.producto.categoria]),
@@ -219,9 +237,22 @@ const reglaProveedor = (proveedorId: string): ReglaBusqueda => ({
   operator: 'any_of',
 })
 
-/** El producto es comprable a ESTE proveedor. Sin proveedor conectado, no lo es. */
+/** El producto es comprable a ESTE proveedor: es UNO de los asociados. Sin asociados, no lo es. */
+/** Productos del Maestro por su ID de ítem (hasta 100 por consulta). */
+export async function getProductosPorIds(ids: readonly string[]): Promise<Producto[]> {
+  const productos: Producto[] = []
+  for (let desde = 0; desde < ids.length; desde += 100) {
+    const data = await mondayApi<{ items: MondayItem[] }>(
+      `query ($ids: [ID!]) { items(ids: $ids, limit: 100) { ${SELECCION_PRODUCTO} } }`,
+      { ids: ids.slice(desde, desde + 100) },
+    )
+    productos.push(...data.items.map(mapProducto))
+  }
+  return productos
+}
+
 export const esDelProveedor = (p: Producto, proveedorId: string): boolean =>
-  p.provId !== null && p.provId === proveedorId
+  p.provIds.includes(proveedorId)
 
 /**
  * Reglas de taxonomía, una por criterio con valores elegidos:
@@ -264,21 +295,21 @@ export function construirQueryProductos(
   termino: string,
   filtros: Filtro[],
   indices: IndicesFiltros,
-  proveedorId: string,
+  proveedorId: string | null,
 ): QueryParamsProductos {
   const t = termino.trim()
+  /* `proveedorId` en null busca en todo el catálogo. Sólo lo usa `existeFueraDelProveedor`, para
+     saber si lo que no se encontró es de otro proveedor; nunca para listar productos. */
+  const proveedor = proveedorId ? [reglaProveedor(proveedorId)] : []
   if (esCodigo(t)) {
     return {
-      rules: [
-        { column_id: COL.producto.codigo, compare_value: [t], operator: 'any_of' },
-        reglaProveedor(proveedorId),
-      ],
+      rules: [{ column_id: COL.producto.codigo, compare_value: [t], operator: 'any_of' }, ...proveedor],
       operator: 'and',
     }
   }
   const rules = reglasTaxonomia(filtros, indices)
   if (t) rules.push({ column_id: 'name', compare_value: t, operator: 'contains_text' })
-  rules.push(reglaProveedor(proveedorId))
+  rules.push(...proveedor)
   return { rules, operator: 'and' }
 }
 
@@ -311,6 +342,23 @@ export async function buscarProductos(
     { limit: PRODUCTOS_POR_PAGINA, qp },
   )
   return filtrarPorProveedor(mapPagina(data.boards[0]?.items_page), proveedorId)
+}
+
+/**
+ * Lo buscado existe en el catálogo SIN la regla del proveedor: o sea, es de otro proveedor. Se
+ * pregunta sólo cuando la búsqueda del proveedor no trajo nada, para poder decir por qué. Trae un
+ * único ítem: no se muestra, sólo se cuenta.
+ */
+export async function existeFueraDelProveedor(termino: string, filtros: Filtro[]): Promise<boolean> {
+  const { indices } = await getTaxonomiaProductos()
+  const qp = construirQueryProductos(termino, filtros, indices, null)
+  const data = await mondayApi<{ boards: { items_page: { items: { id: string }[] } }[] }>(
+    `query ($qp: ItemsQuery) {
+      boards(ids: [${BOARDS.productos}]) { items_page(limit: 1, query_params: $qp) { items { id } } }
+    }`,
+    { qp },
+  )
+  return (data.boards[0]?.items_page.items.length ?? 0) > 0
 }
 
 /**

@@ -1,0 +1,1 @@
+Compará la nueva lista de precios del proveedor con sus productos del Maestro de Productos y devolvé los productos que recibieron una actualización: su id, código, nombre, precio anterior, precio nuevo y, si la lista los informa, sus nuevos descuentos y su nueva bonificación en mercadería.

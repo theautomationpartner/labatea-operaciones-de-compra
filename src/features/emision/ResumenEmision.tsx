@@ -2,15 +2,22 @@ import { type ReactNode } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import type { ResumenCompra } from '@/lib/compras'
 import { money } from '@/lib/format'
+import { fechaHoyAR, fechaRecepcionEstimada } from '@/lib/ordenDoc'
 import { useApp } from '@/state/hooks'
 
 interface ResumenEmisionProps {
   resumen: ResumenCompra
-  /** La orden se está emitiendo: bloquea el botón y muestra el spinner. */
+  /** El PDF se está generando: bloquea el botón y muestra el spinner. */
   generando: boolean
-  /** La orden ya se emitió: el botón queda en verde, como el de envío. */
+  /** El PDF de la orden ya se generó: el botón queda en verde, como el de envío. */
   emitido: boolean
+  /** react-pdf no pudo generar el PDF: el botón queda en rojo con "Error de emisión". */
+  errorPdf?: boolean
+  /** La orden ya se envió: no se puede volver a emitir (cambiaría lo que recibió el proveedor). */
+  enviado?: boolean
   onGenerar: () => void
+  /** Lo que va pegado debajo del botón de emisión: "Ver OC emitida". */
+  children?: ReactNode
 }
 
 interface FilaProps {
@@ -43,8 +50,16 @@ function Fila({ label, requerido = true, tono, children }: FilaProps) {
 }
 
 /** Resumen final antes de emitir. Sólo lectura: todo viene de las etapas anteriores. */
-export function ResumenEmision({ resumen, generando, emitido, onGenerar }: ResumenEmisionProps) {
-  const { comprador, proveedor } = useApp()
+export function ResumenEmision({
+  resumen,
+  generando,
+  emitido,
+  errorPdf = false,
+  enviado = false,
+  onGenerar,
+  children,
+}: ResumenEmisionProps) {
+  const { comprador, proveedor, nroOrden } = useApp()
 
   return (
     <div className="card card--flush resumen-emision">
@@ -61,6 +76,14 @@ export function ResumenEmision({ resumen, generando, emitido, onGenerar }: Resum
         <Fila label="Proveedor">{proveedor?.name ?? '--'}</Fila>
         <Fila label="CUIT/CUIL">{proveedor?.cuit ?? '--'}</Fila>
         <Fila label="Condición de pago">{proveedor?.condicionPago ?? '--'}</Fila>
+        {/* El próximo "🤖ID Compra" del tablero: el que se imprime en el PDF. */}
+        <Fila label="N° de orden">{nroOrden ?? 'Calculando...'}</Fila>
+        {/* Emisión (hoy) + los días del proveedor en "✋️OC 100% Recibida en:". */}
+        <Fila label="Fecha de Recepcion Estimada" requerido={false}>
+          {fechaRecepcionEstimada(fechaHoyAR(), proveedor?.diasRecepcion ?? null) ?? (
+            <span className="rvalue--falta">Sin días de recepción cargados</span>
+          )}
+        </Fila>
         <Fila label="Cantidad de productos">{resumen.lineas}</Fila>
       </div>
 
@@ -83,18 +106,42 @@ export function ResumenEmision({ resumen, generando, emitido, onGenerar }: Resum
         type="button"
         className="btn-generar"
         onClick={onGenerar}
-        disabled={generando || emitido}
+        /* Emitida sigue habilitado: se puede volver a emitir para corregir un error. Ya enviada, no:
+           cambiaría el documento que recibió el proveedor. */
+        disabled={generando || enviado}
         aria-busy={generando}
-        // Emitida: el botón pasa a verde para confirmar, como el de "Enviado".
-        style={emitido ? { backgroundColor: 'var(--green)', color: '#fff' } : undefined}
+        title={
+          generando
+            ? undefined
+            : enviado
+              ? 'La orden ya se envió al proveedor: no se puede volver a emitir.'
+              : emitido
+                ? 'Tocá para volver a emitir con los datos actuales'
+                : errorPdf
+                  ? 'Tocá para reintentar la emisión'
+                  : undefined
+        }
+        /* Emitida: verde para confirmar, como el de "Enviado". Error del PDF: rojo; sigue habilitado
+           por si el reintento anda. */
+        style={
+          emitido
+            ? { backgroundColor: 'var(--green)', color: '#fff' }
+            : errorPdf && !generando
+              ? { backgroundColor: 'var(--red)', color: '#fff' }
+              : undefined
+        }
       >
         {generando ? (
           <>
-            <i className="fas fa-circle-notch spin" /> Emitiendo...
+            <i className="fas fa-circle-notch spin" /> Generando PDF...
           </>
         ) : emitido ? (
           <>
             <i className="fas fa-check" /> Orden de compra emitida
+          </>
+        ) : errorPdf ? (
+          <>
+            <i className="fas fa-xmark" /> Error de emisión
           </>
         ) : (
           <>
@@ -102,6 +149,8 @@ export function ResumenEmision({ resumen, generando, emitido, onGenerar }: Resum
           </>
         )}
       </button>
+
+      {children}
     </div>
   )
 }

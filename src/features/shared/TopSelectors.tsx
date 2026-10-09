@@ -3,7 +3,8 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { LogoEmpresa } from '@/components/ui/LogoEmpresa'
 import { Modal } from '@/components/ui/Modal'
-import { OPERACIONES } from '@/lib/pasos'
+import { OPERACIONES, OPERACIONES_RESTRINGIDAS } from '@/lib/pasos'
+import { puedeHacerExcepciones } from '@/lib/permisos'
 import { useApp, useDispatch } from '@/state/hooks'
 import type { Comprador, Operacion } from '@/types'
 
@@ -19,8 +20,13 @@ function TopSel({ label, children }: { label: string; children: ReactNode }) {
 
 function OperacionSelector() {
   const state = useApp()
-  const { operacion } = state
+  const { operacion, usuarioActual, navegacionBloqueada } = state
   const dispatch = useDispatch()
+  /* ACTUALIZAR PRECIOS sólo se ofrece a Compras/Administración: a quien no puede usarla no se le
+     muestra una puerta cerrada. */
+  const opciones = puedeHacerExcepciones(usuarioActual)
+    ? OPERACIONES
+    : OPERACIONES.filter((op) => !OPERACIONES_RESTRINGIDAS.includes(op))
   // Operación elegida que espera confirmación en el modal de advertencia.
   const [pendiente, setPendiente] = useState<Operacion | null>(null)
 
@@ -43,8 +49,10 @@ function OperacionSelector() {
   return (
     <>
       <Dropdown<Operacion>
+        className="dd--operacion"
+        disabled={navegacionBloqueada}
         label={<span className={operacion ? '' : 'selbox-ph'}>{operacion ?? 'Seleccionar...'}</span>}
-        items={OPERACIONES}
+        items={opciones}
         itemKey={(op) => op}
         renderItem={(op) => op}
         itemClassName="dditem--strong"

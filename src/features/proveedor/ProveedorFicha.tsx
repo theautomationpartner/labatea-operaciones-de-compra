@@ -133,6 +133,17 @@ export function ProveedorFicha({
                 >
                   Condicion de Pago: <strong>{proveedor.condicionPago ?? 'Sin asignar'}</strong>
                 </span>
+                {/* En cuántos días debería recibirse TODA la mercadería de una orden. */}
+                <span
+                  className={`badge badge--cond ${proveedor.diasRecepcion === null ? 'badge--falta' : ''}`}
+                >
+                  OC 100% recibida en:{' '}
+                  <strong>
+                    {proveedor.diasRecepcion === null
+                      ? 'Sin asignar'
+                      : `${proveedor.diasRecepcion} ${proveedor.diasRecepcion === 1 ? 'día' : 'días'}`}
+                  </strong>
+                </span>
                 {tieneRetenciones && (
                   <span className="badge badge-purple">Retenciones: {proveedor.ret}</span>
                 )}

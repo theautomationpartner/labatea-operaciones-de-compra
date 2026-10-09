@@ -1,4 +1,5 @@
 import { PasoHeader } from '@/features/shared/PasoHeader'
+import { pasoInicialDe } from '@/lib/pasos'
 import { useApp, useDispatch } from '@/state/hooks'
 
 /** Paso 0: elegir tipo de operación y comprador antes de entrar al flujo. */
@@ -16,7 +17,7 @@ export function InicioView() {
           type="button"
           className="btn btn-primary btn--h38"
           disabled={!operacion || !comprador}
-          onClick={() => dispatch({ type: 'goto', paso: 'proveedor' })}
+          onClick={() => dispatch({ type: 'goto', paso: pasoInicialDe(operacion) })}
         >
           Confirmar <i className="fas fa-check" />
         </button>

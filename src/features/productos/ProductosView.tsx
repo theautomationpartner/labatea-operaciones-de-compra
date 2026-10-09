@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { AvisoModal } from '@/components/ui/AvisoModal'
+import { Modal } from '@/components/ui/Modal'
 import { PasoHeader, PasoTitulo } from '@/features/shared/PasoHeader'
 import { useBloqueoCredito } from '@/features/shared/useBloqueoCredito'
 import { resumenCompra } from '@/lib/compras'
 import { ETAPA, indiceDePaso, pasosDe } from '@/lib/pasos'
+import { esAdministrador, puedeHacerExcepciones } from '@/lib/permisos'
 import { impactoCredito } from '@/lib/selectors'
 import { useApp, useDispatch } from '@/state/hooks'
 import type { Producto } from '@/types'
@@ -21,11 +23,19 @@ import { TablaProductos } from './TablaProductos'
  * operación: TODO lo que se busca acá es del proveedor de la etapa 1. La regla viaja en la
  * consulta (ver `services/monday/productos`), así que un producto de otro proveedor no llega ni a
  * aparecer en los resultados.
+ *
+ * Si lo buscado no está entre los productos del proveedor pero SÍ existe en el catálogo, una
+ * ventana avisa que el producto encontrado no pertenece al proveedor seleccionado.
  */
 export function ProductosView() {
-  const { proveedor, lineas, operacion } = useApp()
+  const { proveedor, lineas, operacion, usuarioActual } = useApp()
   const dispatch = useDispatch()
   const [seleccionado, setSeleccionado] = useState<Producto | null>(null)
+  const puedeExcepcion = puedeHacerExcepciones(usuarioActual)
+  // Lo buscado existe, pero es de otro proveedor: ventana de aviso.
+  const [avisoOtroProveedor, setAvisoOtroProveedor] = useState(false)
+  // Producto elegido con "✋Estado" Inactivo: ventana de aviso, y no se carga.
+  const [inactivo, setInactivo] = useState<Producto | null>(null)
   // Aviso de la búsqueda, que se muestra en el lugar del producto elegido.
   const [avisoBusqueda, setAvisoBusqueda] = useState('')
   // Ventana de advertencia al intentar continuar sin productos.
@@ -44,11 +54,13 @@ export function ProductosView() {
 
   const indice = indiceDePaso('productos', operacion)
 
-  const agregar = (cantidad: number) => {
+  /* Llega el producto de la tarjeta y no `seleccionado`: puede traer la "Cant x Envase" alterada
+     por un administrador para esta orden. */
+  const agregar = (cantidad: number, producto: Producto) => {
     if (!seleccionado) return
     // Con el crédito excedido no se cargan más productos: hay que bajar el importe.
     if (bloqueo.frenar()) return
-    dispatch({ type: 'addLinea', producto: seleccionado, cantidad })
+    dispatch({ type: 'addLinea', producto, cantidad })
     setSeleccionado(null)
     setAvisoBusqueda('')
   }
@@ -72,8 +84,16 @@ export function ProductosView() {
         <div className="search-area">
           <BuscadorProducto
             proveedorId={proveedor.id}
-            onSelect={setSeleccionado}
+            onSelect={(p) => {
+              /* Sólo un producto Activo se puede pedir: uno inactivo ni siquiera llega a la carga. */
+              if (!p.activo) {
+                setInactivo(p)
+                return
+              }
+              setSeleccionado(p)
+            }}
             onAviso={setAvisoBusqueda}
+            onOtroProveedor={() => setAvisoOtroProveedor(true)}
           />
           <FiltrosProductos />
         </div>
@@ -83,6 +103,8 @@ export function ProductosView() {
           aviso={avisoBusqueda}
           onAdd={agregar}
           bloqueado={bloqueo.excedido}
+          permiteExcepcion={puedeExcepcion}
+          permiteEditarEnvase={esAdministrador(usuarioActual)}
         />
       </div>
 
@@ -91,6 +113,12 @@ export function ProductosView() {
         lineas={lineas}
         onRemove={(id) => dispatch({ type: 'removeLinea', id })}
         onCantidad={(id, cantidad) => dispatch({ type: 'setCantidadLinea', id, cantidad })}
+        /* Sólo Administradores alteran la "Cant x Envase", igual que en la carga. */
+        onEnvase={
+          esAdministrador(usuarioActual)
+            ? (id, cantXUnidad) => dispatch({ type: 'setEnvaseLinea', id, cantXUnidad })
+            : undefined
+        }
       />
 
       <ResumenBox
@@ -135,6 +163,42 @@ export function ProductosView() {
         <AvisoModal titulo={aviso.titulo} onClose={() => setAviso(null)}>
           {aviso.texto}
         </AvisoModal>
+      )}
+
+      {inactivo && (
+        <Modal
+          title="Producto inactivo"
+          icon={<i className="fas fa-triangle-exclamation modal-icon--warn" />}
+          onClose={() => setInactivo(null)}
+          actions={
+            <button type="button" className="btn btn-primary" onClick={() => setInactivo(null)}>
+              Aceptar
+            </button>
+          }
+        >
+          El producto <strong>{inactivo.nombre}</strong> se encuentra <strong>Inactivo</strong> y NO se
+          puede solicitar en una orden de compra.
+        </Modal>
+      )}
+
+      {avisoOtroProveedor && (
+        <Modal
+          title="Producto de otro proveedor"
+          icon={<i className="fas fa-triangle-exclamation modal-icon--warn" />}
+          onClose={() => setAvisoOtroProveedor(false)}
+          actions={
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setAvisoOtroProveedor(false)}
+            >
+              Aceptar
+            </button>
+          }
+        >
+          El producto encontrado NO pertenece al proveedor seleccionado{' '}
+          <strong>{proveedor.name}</strong>.
+        </Modal>
       )}
 
       {bloqueo.modal}

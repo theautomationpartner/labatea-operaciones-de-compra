@@ -11,6 +11,9 @@ import '@/styles/proveedor.css'
 import '@/styles/productos.css'
 import '@/styles/emision.css'
 import '@/styles/factura.css'
+import '@/styles/compras.css'
+import '@/styles/precios.css'
+import '@/styles/comprobante.css'
 
 const container = document.getElementById('root')
 if (!container) throw new Error('No se encontró el nodo #root')

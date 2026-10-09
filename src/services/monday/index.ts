@@ -8,16 +8,21 @@ export {
   siguientePaginaProductos,
   getOpcionesFiltros,
   esDelProveedor,
+  existeFueraDelProveedor,
   PRODUCTOS_POR_PAGINA,
   type OpcionesFiltros,
   type PaginaProductos,
 } from './productos'
-export { getContactosProveedor, DOCUMENTO_ORDEN_COMPRA } from './contactos'
 export {
-  crearOrdenCompra,
-  emitirOrdenCompra,
-  esperarOrdenCompraEmitida,
-  getOrdenCompraPdf,
-  ESTADO_COMPRA_INDEX,
-  type OrdenCompraCreada,
+  actualizarContacto,
+  emailValido,
+  getContactosProveedor,
+  DOCUMENTO_ORDEN_COMPRA,
+} from './contactos'
+export {
+  armarPendientes,
+  getProximoNroOrden,
+  registrarOrdenCompra,
+  type OrdenCompraRegistrada,
 } from './ordenCompra'
+export { crearUpdate, crearUpdates, fechaHoraLegible } from './updates'

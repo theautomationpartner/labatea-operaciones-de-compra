@@ -292,6 +292,9 @@ function mapPersona(item: MondayItem): Persona {
     // Sin condición de pago en el board llega null: no se asume ninguna.
     condicionPago: (c[COL.persona.condPago]?.text?.trim() || null) as CondicionPago | null,
     limit: limite,
+    diasRecepcion: c[COL.persona.diasRecepcion]?.text?.trim()
+      ? num(c[COL.persona.diasRecepcion]?.text)
+      : null,
     saldoCtaCte,
     lineaUtilizada,
     remitosPendFacturar,
@@ -322,6 +325,16 @@ const mapProveedor = (item: MondayItem): Proveedor => {
     tieneCtaCte: ctaCteId !== null,
     ctaCteId,
   }
+}
+
+/** Un proveedor por su ID de ítem, sin las reglas de la búsqueda. `null` si ya no existe. */
+export async function getProveedorPorId(id: string): Promise<Proveedor | null> {
+  const data = await mondayApi<{ items: MondayItem[] }>(
+    `query ($ids: [ID!]) { items(ids: $ids) { ${CAMPOS_PERSONA} } }`,
+    { ids: [id] },
+  )
+  const item = data.items[0]
+  return item ? mapProveedor(item) : null
 }
 
 /**

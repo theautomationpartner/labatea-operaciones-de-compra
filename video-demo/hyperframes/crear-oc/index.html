@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Cómo crear una orden de compra</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #fff;
+      }
+      /* La cámara: lo único que se mueve en los zooms. */
+      #camara {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        transform-origin: 0 0;
+      }
+      #grabacion {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      #marca {
+        position: absolute;
+        right: 48px;
+        bottom: 40px;
+        width: 300px;
+        height: 115px;
+        transform-origin: 100% 100%;
+      }
+      #marca img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      #negro {
+        position: absolute;
+        inset: 0;
+        background: #000;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="292.086" data-width="1920" data-height="1080">
+      <div id="camara">
+        <video id="grabacion" src="assets/crear-oc-base-1080p.mp4" data-start="3.2" data-duration="288.886" data-track-index="0" muted playsinline></video>
+      </div>
+
+      <div
+        id="apertura"
+        data-composition-id="apertura"
+        data-composition-src="compositions/apertura.html"
+        data-start="0"
+        data-duration="4.2"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Logo de The Automation Partner: fuera de la cámara (no se agranda con los zooms). -->
+      <div id="marca"><img src="assets/logo-tap.png" alt="The Automation Partner" /></div>
+
+      <audio id="voz-p1" src="audio/p1.mp3" data-start="3.201" data-duration="29.424" data-track-index="3" data-volume="1"></audio>
+      <audio id="voz-p2" src="audio/p2.mp3" data-start="33.358" data-duration="57.816" data-track-index="3" data-volume="1"></audio>
+      <audio id="voz-p3" src="audio/p3.mp3" data-start="91.876" data-duration="32.712" data-track-index="3" data-volume="1"></audio>
+      <audio id="voz-p4" src="audio/p4.mp3" data-start="125.326" data-duration="50.088" data-track-index="3" data-volume="1"></audio>
+      <audio id="voz-p5" src="audio/p5.mp3" data-start="176.121" data-duration="43.944" data-track-index="3" data-volume="1"></audio>
+      <audio id="voz-p6" src="audio/p6.mp3" data-start="220.766" data-duration="69.984" data-track-index="3" data-volume="1"></audio>
+
+      <!-- Fundido desde negro al principio y a negro al final: por encima de todo. -->
+      <div id="negro"></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+
+      // Fundido desde negro.
+      tl.fromTo("#negro", { opacity: 1 }, { opacity: 0, duration: 0.9, ease: "power1.out" }, 0);
+
+      // Logo de TAP: entra junto con el logo de la app y, terminada la apertura, pasa a marca de agua.
+      tl.fromTo("#marca", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.7, ease: "power2.out" }, 0.5);
+      tl.to("#marca", { scale: 0.6, opacity: 0.35, duration: 0.8, ease: "power2.inOut" }, 4.20);
+
+      // Cámara: zooms sobre lo que nombra la voz.
+      tl.set("#camara", { scale: 1, x: 0, y: 0 }, 0);
+      tl.to("#camara", { scale: 2.4131, x: -11.8, y: 0, duration: 0.7, ease: "power2.inOut" }, 6.931); // p1 zoom
+      tl.to("#camara", { scale: 2.6, x: -87.1, y: 0, duration: 0.8, ease: "power2.inOut" }, 9.469); // p1 zoom
+      tl.to("#camara", { scale: 2.6, x: -1023.1, y: 0, duration: 0.8, ease: "power2.inOut" }, 15.358); // p1 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 20.288); // p1 vuelve
+      tl.to("#camara", { scale: 2.6, x: -3072, y: 0, duration: 0.7, ease: "power2.inOut" }, 22.686); // p1 zoom
+      tl.to("#camara", { scale: 1.068, x: -61.5, y: 0, duration: 0.8, ease: "power2.inOut" }, 33.175); // p2 zoom
+      tl.to("#camara", { scale: 1.0674, x: -60.4, y: 0, duration: 0.8, ease: "power2.inOut" }, 37.480); // p2 zoom
+      tl.to("#camara", { scale: 1.5619, x: -88.4, y: -110.1, duration: 0.8, ease: "power2.inOut" }, 42.215); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: -543.4, duration: 0.8, ease: "power2.inOut" }, 43.184); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: -625.5, duration: 0.8, ease: "power2.inOut" }, 45.028); // p2 zoom
+      tl.to("#camara", { scale: 1.5619, x: -88.4, y: -227.3, duration: 0.8, ease: "power2.inOut" }, 48.765); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: 0, y: -864.5, duration: 0.8, ease: "power2.inOut" }, 52.581); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -37.9, y: -864.5, duration: 0.8, ease: "power2.inOut" }, 53.391); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -417.5, y: -864.5, duration: 0.8, ease: "power2.inOut" }, 55.533); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -1036, y: -864.5, duration: 0.8, ease: "power2.inOut" }, 58.539); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -1843.6, y: -864.5, duration: 0.8, ease: "power2.inOut" }, 61.135); // p2 zoom
+      tl.to("#camara", { scale: 1.0674, x: -60.4, y: -72.8, duration: 0.8, ease: "power2.inOut" }, 66.514); // p2 zoom
+      tl.to("#camara", { scale: 1.0674, x: -60.4, y: -72.8, duration: 0.8, ease: "power2.inOut" }, 76.421); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: -1728, duration: 0.8, ease: "power2.inOut" }, 87.954); // p2 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: 0, duration: 0.8, ease: "power2.inOut" }, 91.772); // p3 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 94.126); // p3 vuelve
+      tl.to("#camara", { scale: 1.0605, x: -79.4, y: 0, duration: 0.7, ease: "power2.inOut" }, 97.211); // p3 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 101.064); // p3 vuelve
+      tl.to("#camara", { scale: 2.6, x: -59.6, y: -386, duration: 0.7, ease: "power2.inOut" }, 105.790); // p3 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: -386.2, duration: 0.8, ease: "power2.inOut" }, 106.500); // p3 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 108.126); // p3 vuelve
+      tl.to("#camara", { scale: 2.6, x: -55.4, y: -743.9, duration: 0.7, ease: "power2.inOut" }, 112.337); // p3 zoom
+      tl.to("#camara", { scale: 2.6, x: -55.4, y: -617.8, duration: 0.8, ease: "power2.inOut" }, 116.924); // p3 zoom
+      tl.to("#camara", { scale: 2.6, x: 0, y: -866.5, duration: 0.8, ease: "power2.inOut" }, 117.734); // p3 zoom
+      tl.to("#camara", { scale: 2.6, x: -17.2, y: -866.5, duration: 0.8, ease: "power2.inOut" }, 118.756); // p3 zoom
+      tl.to("#camara", { scale: 2.6, x: -459, y: -866.5, duration: 0.8, ease: "power2.inOut" }, 121.163); // p3 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 125.176); // p3 vuelve
+      tl.to("#camara", { scale: 2.6, x: -459, y: -891.6, duration: 0.7, ease: "power2.inOut" }, 127.218); // p4 zoom
+      tl.to("#camara", { scale: 1.1039, x: -95.3, y: -112.2, duration: 0.8, ease: "power2.inOut" }, 128.412); // p4 zoom
+      tl.to("#camara", { scale: 2.6, x: -459, y: -891.6, duration: 0.8, ease: "power2.inOut" }, 133.169); // p4 zoom
+      tl.to("#camara", { scale: 1.1039, x: -95.3, y: -112.2, duration: 0.8, ease: "power2.inOut" }, 139.004); // p4 zoom
+      tl.to("#camara", { scale: 2.6, x: -1765.9, y: -718.6, duration: 0.8, ease: "power2.inOut" }, 141.849); // p4 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 143.099); // p4 vuelve
+      tl.to("#camara", { scale: 2.6, x: -2238.2, y: -719.7, duration: 0.7, ease: "power2.inOut" }, 148.578); // p4 zoom
+      tl.to("#camara", { scale: 2.6, x: -55.4, y: -1391.3, duration: 0.8, ease: "power2.inOut" }, 152.622); // p4 zoom
+      tl.to("#camara", { scale: 1.5458, x: -902, y: -576.6, duration: 0.8, ease: "power2.inOut" }, 165.192); // p4 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: -719.7, duration: 0.8, ease: "power2.inOut" }, 172.880); // p4 zoom
+      tl.to("#camara", { scale: 1.0674, x: -60.4, y: -34, duration: 0.8, ease: "power2.inOut" }, 177.352); // p5 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 187.684); // p5 vuelve
+      tl.to("#camara", { scale: 2.6, x: -2735, y: -922.3, duration: 0.7, ease: "power2.inOut" }, 189.426); // p5 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 194.609); // p5 vuelve
+      tl.to("#camara", { scale: 1.1483, x: -159.8, y: -0.4, duration: 0.7, ease: "power2.inOut" }, 197.673); // p5 zoom
+      tl.to("#camara", { scale: 2.6, x: -90.8, y: -1460.4, duration: 0.8, ease: "power2.inOut" }, 200.390); // p5 zoom
+      tl.to("#camara", { scale: 1.6201, x: -1085.9, y: -669.8, duration: 0.8, ease: "power2.inOut" }, 205.918); // p5 zoom
+      tl.to("#camara", { scale: 2.6, x: -3072, y: -1728, duration: 0.8, ease: "power2.inOut" }, 217.001); // p5 zoom
+      tl.to("#camara", { scale: 2.6, x: -76.3, y: -639.7, duration: 0.8, ease: "power2.inOut" }, 220.658); // p6 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 234.754); // p6 vuelve
+      tl.to("#camara", { scale: 2.6, x: -76.3, y: -1603.9, duration: 0.7, ease: "power2.inOut" }, 237.982); // p6 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 240.103); // p6 vuelve
+      tl.to("#camara", { scale: 1.6463, x: -916.8, y: -23, duration: 0.7, ease: "power2.inOut" }, 241.787); // p6 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 246.566); // p6 vuelve
+      tl.to("#camara", { scale: 1.5539, x: -1009.3, y: -106.8, duration: 0.7, ease: "power2.inOut" }, 248.247); // p6 zoom
+      tl.to("#camara", { scale: 1.6193, x: -1092.4, y: -443.8, duration: 0.8, ease: "power2.inOut" }, 252.511); // p6 zoom
+      tl.to("#camara", { scale: 2.6, x: -1501.7, y: -1295.5, duration: 0.8, ease: "power2.inOut" }, 254.950); // p6 zoom
+      tl.to("#camara", { scale: 2.5002, x: -1407.2, y: -1537.2, duration: 0.8, ease: "power2.inOut" }, 258.101); // p6 zoom
+      tl.to("#camara", { scale: 1.6193, x: -1092.4, y: -668.9, duration: 0.8, ease: "power2.inOut" }, 266.321); // p6 zoom
+      tl.to("#camara", { scale: 2.6, x: -2841.3, y: -1651.6, duration: 0.8, ease: "power2.inOut" }, 267.131); // p6 zoom
+      tl.to("#camara", { scale: 2.6, x: -1537.2, y: -1055.4, duration: 0.8, ease: "power2.inOut" }, 268.593); // p6 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 269.941); // p6 vuelve
+      tl.to("#camara", { scale: 2.6, x: -1537.2, y: -867.7, duration: 0.7, ease: "power2.inOut" }, 275.412); // p6 zoom
+      tl.to("#camara", { scale: 2.6, x: -1702.6, y: -1226.5, duration: 0.8, ease: "power2.inOut" }, 279.559); // p6 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 281.441); // p6 vuelve
+      tl.to("#camara", { scale: 1.7698, x: -1287.3, y: -831.4, duration: 0.7, ease: "power2.inOut" }, 285.856); // p6 zoom
+      tl.to("#camara", { scale: 1, x: 0, y: 0, duration: 0.7, ease: "power2.inOut" }, 290.186); // p6 vuelve
+
+      // Fundido a negro.
+      tl.to("#negro", { opacity: 1, duration: 1.2, ease: "power1.in" }, 290.886);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

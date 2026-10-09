@@ -1,7 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { ModalErrorMonday } from '@/components/ui/ModalErrorMonday'
+import { CargarComprobanteView } from '@/features/comprobante/CargarComprobanteView'
+import { ConsultarOrdenesView } from '@/features/consultar/ConsultarOrdenesView'
 import { EmisionView } from '@/features/emision/EmisionView'
 import { InicioView } from '@/features/inicio/InicioView'
+import { ComprobantePreciosView } from '@/features/precios/ComprobantePreciosView'
+import { PreciosView } from '@/features/precios/PreciosView'
 import { ProductosView } from '@/features/productos/ProductosView'
 import { ProveedorView } from '@/features/proveedor/ProveedorView'
 import { getCompradores, getUsuarioActual } from '@/services/monday'
@@ -14,6 +18,10 @@ const VISTAS: Record<Paso, () => JSX.Element | null> = {
   proveedor: ProveedorView,
   productos: ProductosView,
   emision: EmisionView,
+  consultar: ConsultarOrdenesView,
+  precios: PreciosView,
+  preciosComprobante: ComprobantePreciosView,
+  comprobante: CargarComprobanteView,
 }
 
 export function App() {

@@ -27,7 +27,7 @@ interface PasoHeaderProps {
  * quedan bloqueados. El destino de cada índice sale de `pasosKeysDe` (mismo orden que las etiquetas).
  */
 export function PasoHeader({ pasos, actual = 0, children }: PasoHeaderProps) {
-  const { operacion, pasoMaxIdx } = useApp()
+  const { operacion, pasoMaxIdx, navegacionBloqueada } = useApp()
   const dispatch = useDispatch()
   const claves = pasosKeysDe(operacion)
   const irAPaso = (i: number) => {
@@ -57,7 +57,7 @@ export function PasoHeader({ pasos, actual = 0, children }: PasoHeaderProps) {
             current={pasos ? actual : 0}
             className={`stepper--tight ${pasos ? '' : 'stepper--fantasma'}`}
             maxReached={pasos ? pasoMaxIdx : 0}
-            onStep={pasos ? irAPaso : undefined}
+            onStep={pasos && !navegacionBloqueada ? irAPaso : undefined}
           />
         </div>
       </div>

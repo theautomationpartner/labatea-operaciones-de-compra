@@ -1,0 +1,7 @@
+node_modules/
+grabaciones/
+cache/
+salidas/
+recon/
+audio/
+*.mp4

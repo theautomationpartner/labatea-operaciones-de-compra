@@ -58,6 +58,67 @@ export const cantidadConEscalon = (p: Producto, cantidad: number, pasos: number)
   return Math.max(0, cantidad + pasos * escalon)
 }
 
+/**
+ * La cantidad respeta la compra mínima: es un múltiplo exacto de "✋Cant x Envase".
+ *
+ * Una que no lo respeta sólo puede cargarla Compras/Administración, como excepción pactada con el
+ * proveedor (ver `lib/permisos`), y se marca en rojo donde aparezca.
+ */
+export const respetaEnvase = (p: Producto, cantidad: number): boolean =>
+  cantidad % cantPorEnvase(p) === 0
+
+/** Aviso de la cantidad que no respeta la compra mínima. Escrito una vez para carga y tabla. */
+export const avisoCompraMinima = (p: Producto): string => {
+  const escalon = cantPorEnvase(p)
+  return `Vas a comprar con una cantidad que no respeta la unidad de compra mínima. La compra mínima es ${escalon} ${
+    escalon === 1 ? 'unidad' : 'unidades'
+  } por ${p.unidadCompra || 'envase'}.`
+}
+
+/** La "Cant x Envase" de la línea fue alterada para esta orden y difiere de la del Maestro. */
+export const envaseModificado = (p: Producto): boolean =>
+  p.cantXUnidadMaestro !== undefined && p.cantXUnidadMaestro !== p.cantXUnidad
+
+/** Advertencia de la "Cant x Envase" alterada. Escrita una vez para la carga y la tabla. */
+export const avisoEnvaseModificado = (p: Producto): string =>
+  `Estás solicitando por una Cant x Envase de ${p.cantXUnidad}, que NO es la definida en el Maestro de Productos (${
+    p.cantXUnidadMaestro ?? '—'
+  }).`
+
+/** Envases para mostrar: entero si lo es, con hasta dos decimales si la cantidad es una excepción. */
+export const formatoEnvases = (n: number): string =>
+  Number.isInteger(n) ? String(n) : n.toLocaleString('es-AR', { maximumFractionDigits: 2 })
+
+/** Cómo se llega del precio de lista al costo final, en $. */
+export interface DesgloseCosto {
+  precio: number
+  /** Lo que restan los descuentos, en cascada. */
+  descuentos: number
+  /** Lo que resta la bonificación en mercadería, sobre el precio ya descontado. */
+  bonificacion: number
+  /** El costo final tal como lo calcula el Maestro ("🤖Costo de Reposicion"). */
+  costoFinal: number
+}
+
+/**
+ * Desglose del costo, con la MISMA fórmula que "🤖Costo de Reposicion" en el Maestro: el precio
+ * por (1 − Dto1) × (1 − Dto2) × …, y eso dividido por (1 + Bonif. en Mercadería). La bonificación
+ * divide y no resta porque es mercadería de regalo: pagás N y te llevan N × (1 + BM).
+ *
+ * El costo final se toma del Maestro y no de esta cuenta, para que la cifra que se muestra sea la
+ * misma que se usa en la orden; la bonificación absorbe la diferencia de redondeo.
+ */
+export function desgloseCosto(p: Producto): DesgloseCosto {
+  const precio = p.precioUnitario
+  const conDescuentos = p.descuentos.reduce((acc, d) => acc * (1 - d / 100), precio)
+  return {
+    precio,
+    descuentos: round2(precio - conDescuentos),
+    bonificacion: round2(conDescuentos - p.costoReposicion),
+    costoFinal: p.costoReposicion,
+  }
+}
+
 /** Totales de la orden. Sin descuentos ni IVA: una orden de compra pide mercadería a un precio. */
 export interface ResumenCompra {
   /** Cuántas líneas tiene la orden. */

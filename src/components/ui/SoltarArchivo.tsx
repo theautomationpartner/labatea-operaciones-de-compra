@@ -1,0 +1,169 @@
+import { useRef, useState, type ReactNode } from 'react'
+
+export type EstadoSoltar = 'vacio' | 'procesando' | 'listo' | 'advertencia' | 'error'
+
+interface SoltarArchivoProps {
+  id: string
+  /** El documento cargado (su nombre), o `null`. */
+  archivo: string | null
+  estado: EstadoSoltar
+  /** Título y detalle de la cara, según el estado. En `vacio` se usa la consigna por defecto. */
+  titulo?: string
+  detalle?: string
+  deshabilitado?: boolean
+  onArchivo: (f: File) => void
+  onQuitar?: () => void
+  /** Acción extra junto al archivo (p. ej. "Analizar de nuevo"). */
+  accion?: { texto: string; onClick: () => void }
+  /** Qué archivos acepta el buscador, y cómo se los nombra en la ayuda. */
+  accept: string
+  formatos: string
+  className?: string
+  /** Contenido extra DENTRO del recuadro, debajo de la cara (p. ej. la barra de progreso). */
+  children?: ReactNode
+}
+
+/**
+ * El recuadro de arrastrar y soltar de la carga de la ORDEN DE PRODUCCIÓN (app de Polifroni), que
+ * a su vez es el del cobro CONTADO de La Batea. Mismo comportamiento y mismos estados.
+ *
+ * El recuadro ENTERO es la zona de soltado, y adentro pasa todo: la consigna, el estado del
+ * documento (procesando, cargado, con error) y el documento cargado con sus acciones. Un botón
+ * transparente cubre el recuadro: es el que abre el buscador y el que recibe el foco del teclado.
+ */
+export function SoltarArchivo({
+  id,
+  archivo,
+  estado,
+  titulo,
+  detalle,
+  deshabilitado = false,
+  onArchivo,
+  onQuitar,
+  accion,
+  accept,
+  formatos,
+  className = '',
+  children,
+}: SoltarArchivoProps) {
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const cerrado = deshabilitado || estado === 'procesando'
+
+  const tomar = (f: File | undefined) => {
+    if (f && !cerrado) onArchivo(f)
+  }
+
+  return (
+    <div
+      className={`cobro-lector cobro-lector--${estado} ${dragOver && !cerrado ? 'is-over' : ''} ${className}`}
+      onDragOver={(e) => {
+        if (cerrado) return
+        e.preventDefault()
+        setDragOver(true)
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        if (cerrado) return
+        e.preventDefault()
+        setDragOver(false)
+        tomar(e.dataTransfer.files?.[0])
+      }}
+    >
+      <button
+        type="button"
+        className="cobro-lector-hit"
+        disabled={cerrado}
+        title={
+          estado === 'procesando'
+            ? 'Esperá a que termine de procesarse el documento'
+            : archivo
+              ? 'Reemplazar el documento cargado'
+              : `Arrastrá para subir · ${formatos}`
+        }
+        aria-label={
+          estado === 'procesando'
+            ? 'Procesando el documento: esperá a que termine'
+            : archivo
+              ? `Documento cargado: ${archivo}. Hacé click para reemplazarlo`
+              : 'Subir el documento: arrastrá el archivo o hacé click para elegirlo'
+        }
+        onClick={() => inputRef.current?.click()}
+      />
+
+      <input
+        ref={inputRef}
+        id={id}
+        type="file"
+        hidden
+        accept={accept}
+        onChange={(e) => {
+          tomar(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
+
+      <span className={`cobro-lector-cara cobro-lector-cara--${estado}`} aria-live="polite">
+        {estado === 'procesando' && (
+          <>
+            <span className="cobro-lector-spin" aria-hidden="true" />
+            <span className="cobro-lector-titulo">{titulo ?? 'Procesando el documento…'}</span>
+            {detalle && <span className="cobro-lector-consigna">{detalle}</span>}
+          </>
+        )}
+        {estado === 'listo' && (
+          <>
+            <i className="fas fa-circle-check" aria-hidden="true" />
+            <span className="cobro-lector-titulo">{titulo ?? 'Documento cargado'}</span>
+            {detalle && <span className="cobro-lector-consigna">{detalle}</span>}
+          </>
+        )}
+        {(estado === 'advertencia' || estado === 'error') && (
+          <>
+            <i
+              className={`fas ${estado === 'error' ? 'fa-circle-exclamation' : 'fa-triangle-exclamation'}`}
+              aria-hidden="true"
+            />
+            <span className="cobro-lector-titulo">{titulo}</span>
+            {detalle && <span className="cobro-lector-consigna">{detalle}</span>}
+          </>
+        )}
+        {estado === 'vacio' && (
+          <>
+            <span className="cobro-lector-titulo">{titulo ?? 'Arrastrá para subir'}</span>
+            <span className="cobro-lector-consigna">
+              {detalle ?? `Soltá en este área el archivo (${formatos}), o hacé click para elegirlo`}
+            </span>
+            <i className="fas fa-cloud-arrow-up" />
+          </>
+        )}
+      </span>
+
+      {children && <div className="cobro-lector-extra">{children}</div>}
+
+      {archivo && (
+        <span className="cobro-lector-archivo">
+          <i className="fas fa-paperclip" aria-hidden="true" />
+          <span className="cobro-lector-nombre" title={archivo}>
+            {archivo}
+          </span>
+          {accion && !cerrado && (
+            <button type="button" className="cobro-lector-accion" onClick={accion.onClick}>
+              {accion.texto}
+            </button>
+          )}
+          {onQuitar && !cerrado && (
+            <button
+              type="button"
+              className="cobro-lector-accion cobro-lector-accion--quitar"
+              onClick={onQuitar}
+              title="Quitar el documento"
+            >
+              Eliminar
+            </button>
+          )}
+        </span>
+      )}
+    </div>
+  )
+}

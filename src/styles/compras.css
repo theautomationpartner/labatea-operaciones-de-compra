@@ -1,0 +1,1099 @@
+/* Piezas de COMPRAS que no son de una sola etapa: etiquetas de producto, excepciones de cantidad,
+   resumen logístico, CONSULTAR ÓRDENES DE COMPRA y ACTUALIZAR PRECIOS. */
+
+:root {
+  --gold: #b8860b;
+  --gold-bg: #fdf3d7;
+  --gold-bd: #ecd28b;
+}
+
+/* ===== Etiquetas de producto ===== */
+.tag-consignado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  vertical-align: middle;
+  background: var(--gold-bg);
+  color: var(--gold);
+  border: 1px solid var(--gold-bd);
+}
+
+/* Resultado de la búsqueda: el nombre y sus etiquetas a la derecha. */
+.ritem-name-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-width: 0;
+}
+/* ===== Cantidad fuera de la compra mínima ===== */
+.productos-v2 .qty-input-group--fuera,
+.qbox--fuera {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 1px var(--red);
+}
+.qbox--fuera {
+  border-radius: 4px;
+}
+.cl-aviso-minima {
+  display: block;
+  margin-top: 6px;
+  max-width: 260px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--red);
+}
+.tabla-fuera-ic {
+  margin-left: 6px;
+  color: var(--red);
+}
+
+/* "Cant x Envase" editable (administradores) y su marca de valor alterado. */
+.cl-kpi-input {
+  width: 64px;
+  height: 28px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid var(--primary-blue);
+  border-radius: 6px;
+  background: #fff;
+}
+.cl-kpi-nota {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-gray);
+  margin-top: 2px;
+}
+/* Cant x Envase distinta de la del Maestro: borde amarillo en la carga y en la tabla, y la
+   advertencia debajo del Detalle de Costo y el Stock. */
+/* Con el foco puesto el navegador dibuja su contorno negro ENCIMA del borde, y la advertencia
+   amarilla recién se veía al salir del campo. Se reemplaza por el anillo del propio campo: azul
+   mientras el valor es el del Maestro, amarillo apenas deja de serlo, sin esperar al blur. */
+.cl-kpi-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 115, 234, 0.25);
+}
+.cl-kpi-input--modificado,
+.cl-kpi-input--modificado:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px var(--yellow);
+}
+.envase-mod-box {
+  position: relative;
+  display: inline-block;
+  min-width: 44px;
+  padding: 4px 10px;
+  border: 1px solid var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow);
+  border-radius: 6px;
+  background: #fffbea;
+  cursor: help;
+}
+/* Cant x Envase editable de la tabla, alterada: el recuadro del campo en amarillo (también con el
+   foco puesto) y el badge montado en la esquina. Va con `.productos-v2` para ganarle al borde
+   base de `.productos-v2 .qbox`. */
+.productos-v2 .qbox--envase-mod,
+.productos-v2 .qbox--envase-mod:focus-within {
+  position: relative;
+  overflow: visible;
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px var(--yellow);
+}
+.productos-v2 .qbox--envase-mod input {
+  background: #fffbea;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+}
+/* Ícono de advertencia montado sobre la esquina superior derecha del recuadro amarillo. */
+.envase-mod-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--yellow);
+  color: #e2a500;
+  font-size: 9px;
+  pointer-events: none;
+}
+.cl-aviso-envase {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #f5d76e;
+  background: #fffbea;
+  color: #8a6100;
+  font-size: 13px;
+  font-weight: 600;
+}
+.cl-aviso-envase i {
+  color: #e2a500;
+  margin-right: 4px;
+}
+
+/* Tarjeta de carga: el stock ocupa TODO el alto de la fila, el mismo que el "Detalle de Costo" de
+   al lado. Las cajas crecen para llenarlo y la nota de ingreso queda abajo. */
+.productos-v2 .selected-product-box .cl-bottom {
+  align-items: stretch;
+}
+.productos-v2 .selected-product-box .cl-stock {
+  display: flex;
+  flex-direction: column;
+}
+.productos-v2 .selected-product-box .cl-stock .stock,
+.productos-v2 .selected-product-box .cl-stock .stock-main,
+.productos-v2 .selected-product-box .cl-stock .stock-placeholder {
+  flex: 1 1 auto;
+}
+.productos-v2 .selected-product-box .cl-stock .stock-boxes {
+  flex: 1 1 auto;
+  align-items: stretch;
+}
+
+/* Fila desplegada de la tabla: el stock ocupa el mismo alto que el "Detalle de Costo" de al lado,
+   igual que en la tarjeta de carga. */
+.productos-v2 .expd .lindet {
+  align-items: stretch;
+}
+.productos-v2 .expd .lindet-stock {
+  display: flex;
+  flex-direction: column;
+}
+.productos-v2 .expd .lindet-stock .stock,
+.productos-v2 .expd .lindet-stock .stock-main,
+.productos-v2 .expd .lindet-stock .stock-boxes {
+  flex: 1 1 auto;
+}
+.productos-v2 .expd .lindet-stock .stock-boxes {
+  align-items: stretch;
+}
+
+/* Nota secundaria dentro de un modal. */
+.modal-nota {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-gray);
+}
+
+/* ===== Envío: medio de envío por defecto =====
+   El medio no se elige: se muestra fijo. Mismo componente que el de Registrar cobros y recibos. */
+.envio-medio-linea {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.envio-medio-lbl {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark, #323338);
+}
+.envio-medio-fijo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--tint-neutral-bd, #e4e7ec);
+  border-radius: 8px;
+  background: var(--tint-neutral, #f7f8fa);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark, #323338);
+}
+.envio-medio-fijo i {
+  color: var(--primary-blue, #0073ea);
+}
+
+/* ===== Botón contorno en las pantallas nuevas ===== */
+.precios-v .btn-outline {
+  background: #fff;
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.precios-v .btn-outline:hover:not(:disabled) {
+  background: var(--tint-input);
+}
+.precios-v .btn-outline:disabled {
+  color: #a1a3b1;
+  cursor: not-allowed;
+}
+
+/* ===== Tablas y textos de las ventanas de CONSULTAR ÓRDENES DE COMPRA ===== */
+.pend-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.pend-tabla th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-gray);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.pend-tabla td {
+  padding: 8px;
+  border-bottom: 1px solid #f0f1f4;
+  vertical-align: middle;
+}
+.pend-tabla .ta-c {
+  text-align: center;
+}
+.pend-prod {
+  font-weight: 600;
+  margin-left: 6px;
+}
+.pend-textarea {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* ===== ACTUALIZAR PRECIOS (lo propio de la etapa 2 está en precios.css) ===== */
+.precios-v .card {
+  background: #fff;
+  border-radius: 10px;
+}
+.precios-sin-permiso {
+  margin-top: 24px;
+  font-size: 14px;
+}
+.precios-sin-permiso i {
+  color: var(--text-gray);
+  margin-right: 6px;
+}
+.precios-h {
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.precios-nota {
+  font-size: 12px;
+  color: var(--text-gray);
+  margin-top: 8px;
+}
+.precios-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.precios-input {
+  height: 38px;
+  width: 140px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.precios-acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.precios-resultado h3 {
+  color: var(--green-dark);
+  margin-bottom: 8px;
+}
+.precios-resultado p {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* ===== "Volver" de la etapa de emisión ===== */
+/* Mismo botón que el "Volver" de la etapa de productos (`.productos-v2 .btn-outline`): blanco, con
+   borde suave y la flecha a la izquierda. Los valores van escritos porque las variables `--p-*`
+   sólo existen dentro de `.productos-v2`. */
+.emision-v2 .btn-volver {
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+.emision-v2 .btn-volver:hover:not(:disabled) {
+  background: #f4f5f7;
+}
+
+/* ===== "Ver OC emitida" (etapa de emisión) =====
+   Mismo botón que el "Ver / Imprimir" del presupuesto en Operaciones de venta. */
+.pres-pdf {
+  margin-top: 10px;
+}
+.pres-pdf-btn {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+  justify-content: center;
+  gap: 8px;
+}
+.pres-pdf-btn:disabled {
+  cursor: not-allowed;
+  background: #f4f5f7;
+  color: #a1a3b1;
+}
+.pres-pdf-aviso {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--red);
+}
+
+/* ===== CONSULTAR ÓRDENES DE COMPRA =====
+   El buscador y la tabla son los de "Consultar y Gestionar Presupuestos" de App-Polifroni
+   (`obras.css`, `labatea.css`, `agenda.css`): mismas medidas, colores y variables. Lo único que
+   cambia es el color de marca de las pestañas (`--marca`), que allá es el bordó de Polifroni y acá
+   el azul de La Batea. */
+.consultar-v {
+  /* obras.css · .obras-v2 */
+  --o-primary: #6c4cf1;
+  --o-surface: #ffffff;
+  --o-text-main: #1f2937;
+  --o-text-muted: #64748b;
+  --o-border: #e2e8f0;
+  --o-shadow-card: 0 2px 8px rgba(15, 23, 42, 0.06);
+  /* labatea.css · .obras-v2 / .anticipos-v2 */
+  --c-bg-card: #ffffff;
+  --c-border: #e4e7ec;
+  --c-text-main: #1f2937;
+  --c-text-secondary: #667085;
+  --c-primary: #0052cc;
+  --c-primary-hover: #0043a6;
+  --c-success: #00c875;
+  --c-danger: #e44258;
+  --c-radius-lg: 12px;
+  --c-radius-md: 8px;
+  --c-shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.02), 0 4px 12px rgba(0, 0, 0, 0.04);
+  /* labatea.css · :root (color de marca) */
+  --marca: var(--primary-blue);
+  --marca-hover: var(--primary-blue-hover);
+  --marca-suave: var(--tag-bg);
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* Mismo contenedor que las etapas de CREAR ORDEN DE COMPRA: ancho máximo centrado y el padding
+     lateral que compensa el sangrado de la barra de contexto. */
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.consultar-v input,
+.consultar-v button,
+.consultar-v textarea {
+  font-family: inherit;
+}
+
+/* El título de la operación, separado de la barra superior. */
+.consultar-v .header-section {
+  margin-top: 16px;
+}
+
+/* --- Buscador --- */
+.consultar-v .card.unified-toolbar {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+  background: var(--o-surface);
+  border: 1px solid var(--o-border);
+  border-radius: 16px;
+  box-shadow: var(--o-shadow-card);
+}
+.consultar-v .search-container {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.consultar-v .search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--o-border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+  height: 46px;
+}
+.consultar-v .search-wrapper:focus-within {
+  border-color: var(--o-primary);
+}
+.consultar-v .search-wrapper > svg {
+  position: absolute;
+  left: 12px;
+  color: #6366f1;
+}
+.consultar-v .search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 16px 0 40px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+  color: var(--o-text-main);
+}
+.consultar-v .search-input::placeholder {
+  color: var(--o-text-muted);
+}
+.consultar-v .search-helper {
+  --linea: 18px;
+  display: block;
+  min-height: var(--linea);
+  line-height: var(--linea);
+  font-size: 13px;
+  color: var(--o-text-muted);
+  padding-left: 4px;
+}
+@media (max-width: 560px) {
+  .consultar-v .card.unified-toolbar {
+    padding: 12px;
+    gap: 8px;
+  }
+}
+
+/* --- Tarjeta de la tabla --- */
+.consultar-v .cobro-static {
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-bg-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--c-radius-lg);
+  box-shadow: var(--c-shadow-soft);
+  overflow: hidden;
+}
+.consultar-v .cobro-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--c-bg-card);
+  padding: 24px;
+}
+.consultar-v .cobro-card-acts {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 25px;
+  min-height: 20px;
+  box-sizing: content-box;
+}
+.consultar-v .cobro-bloqueo-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--c-danger);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.consultar-v .cobro-bloqueo-inline--ok {
+  color: var(--c-success);
+}
+
+/* --- Pestañas de filtro --- */
+.consultar-v .ag-filtros {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.consultar-v .ag-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.consultar-v .ag-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--c-border, #e4e7ec);
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.consultar-v .ag-tab:hover {
+  border-color: var(--marca);
+}
+.consultar-v .ag-tab--on {
+  border-color: var(--marca);
+  background: var(--marca-suave);
+  color: var(--marca);
+}
+.consultar-v .ag-tab-n {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #eef1f5;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+.consultar-v .ag-tab--on .ag-tab-n {
+  background: var(--marca);
+  color: #fff;
+}
+
+/* --- Tabla --- */
+.consultar-v .ant-tabla-wrap {
+  overflow-x: auto;
+}
+.consultar-v .ant-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.consultar-v .ant-tabla thead th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--c-border);
+  white-space: nowrap;
+}
+.consultar-v .ant-tabla td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f3f8;
+  vertical-align: middle;
+}
+.consultar-v .ant-col-cen,
+.consultar-v .ant-tabla thead th.ant-col-cen {
+  text-align: center;
+}
+.consultar-v .ant-sd {
+  color: #98a2b3;
+}
+.consultar-v .ant-nro {
+  display: block;
+  font-weight: 700;
+  color: var(--c-text-main);
+}
+.consultar-v .ant-row:hover td {
+  background: #e2ecfc;
+}
+.consultar-v .ant-tabla--fija {
+  table-layout: fixed;
+}
+.consultar-v .ant-tabla--fija td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.consultar-v .ant-tabla td.ant-aviso {
+  padding: 36px 12px;
+  text-align: center;
+  white-space: normal;
+  font-size: 14px;
+  color: var(--c-text-secondary);
+}
+.consultar-v .ant-aviso > i {
+  margin-right: 6px;
+  color: var(--c-primary);
+}
+.consultar-v .ant-row--cancelando td {
+  animation: cons-procesando 1.1s ease-in-out infinite;
+}
+@keyframes cons-procesando {
+  0%,
+  100% {
+    background: #fff;
+  }
+  50% {
+    background: #fdecee;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .consultar-v .ant-row--cancelando td {
+    animation: none;
+  }
+}
+.consultar-v .ant-ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--c-radius-md);
+  background: #fff;
+  color: var(--c-primary);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.consultar-v .ant-ver:hover {
+  background: #f3f8ff;
+}
+.consultar-v .ag-turno {
+  overflow: hidden;
+}
+.consultar-v .ag-turno-cli {
+  display: block;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Anchos de columna (mismo criterio que `pres-w-*` / `ag-w-*`). Las columnas de datos tienen
+   ancho fijo para que queden a la misma distancia entre sí; el sobrante lo toma la columna vacía
+   sin clase, que deja a "Acción" contra el borde derecho. */
+.consultar-v .cons-tabla {
+  min-width: 1330px;
+}
+.consultar-v .cons-tabla col.cons-w-nro {
+  width: 190px;
+}
+.consultar-v .cons-tabla col.cons-w-prov {
+  width: 280px;
+}
+.consultar-v .cons-tabla col.cons-w-ver {
+  width: 160px;
+}
+.consultar-v .cons-tabla col.cons-w-estado {
+  width: 180px;
+}
+.consultar-v .cons-tabla col.cons-w-fecha {
+  width: 140px;
+}
+.consultar-v .cons-tabla col.cons-w-acc {
+  width: 372px;
+}
+/* N° de orden con el estado de la orden ("En Curso") a su derecha. */
+.consultar-v .cons-nro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Pastilla de estado (obras.css · .op-estado) --- */
+.consultar-v .op-estado {
+  --op-c: #c4c4c4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--op-c) 62%, #0f172a);
+  background: color-mix(in srgb, var(--op-c) 16%, #fff);
+  border: 1px solid color-mix(in srgb, var(--op-c) 35%, #fff);
+}
+.consultar-v .op-estado--sm {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* --- Acciones de la fila (agenda.css · .ag-acc) --- */
+.consultar-v .ag-acciones {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 6px;
+}
+.consultar-v .ag-acc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: var(--c-radius-md, 8px);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.consultar-v .ag-acc:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.consultar-v .ag-acc--ok {
+  background: #00a35f;
+  border-color: #00a35f;
+}
+.consultar-v .ag-acc--ok:hover:not(:disabled) {
+  background: #008a50;
+  border-color: #008a50;
+}
+.consultar-v .ag-acc--rep {
+  background: var(--primary-blue, #0073ea);
+  border-color: var(--primary-blue, #0073ea);
+}
+.consultar-v .ag-acc--rep:hover:not(:disabled) {
+  background: #0060c2;
+  border-color: #0060c2;
+}
+.consultar-v .ag-acc--cancel {
+  background: #df2f4a;
+  border-color: #df2f4a;
+}
+.consultar-v .ag-acc--cancel:hover:not(:disabled) {
+  background: #c0273c;
+  border-color: #c0273c;
+}
+.consultar-v .ag-trabajando {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--marca);
+}
+
+/* --- Paginador (obras.css · .obras-pager) --- */
+.consultar-v .obras-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--o-text-muted);
+}
+.consultar-v .obras-pager-info {
+  margin-right: auto;
+}
+.consultar-v .obras-pager-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--o-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--o-text-main);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.consultar-v .obras-pager-btn:hover:not(:disabled) {
+  background: #f5f6f8;
+}
+.consultar-v .obras-pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* --- Fila desplegable (labatea.css de Polifroni · vidrios de cada OP: `vid-*`) --- */
+.consultar-v .cons-fila {
+  cursor: pointer;
+}
+.consultar-v .cons-fila--abierta td {
+  background: #f7f9fc;
+}
+.consultar-v .vid-chev {
+  font-size: 11px;
+  color: var(--marca);
+  transition: transform 0.2s ease;
+}
+.consultar-v .vid-chev--on {
+  transform: rotate(180deg);
+}
+.consultar-v .ant-tabla--fija tr.vid-detalle > td {
+  padding: 0 0 16px;
+  overflow: visible;
+  white-space: normal;
+  border-bottom: 1px solid var(--o-border, #e2e8f0);
+  background: #fff;
+  animation: vid-abre 0.22s ease-out;
+}
+@keyframes vid-abre {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .consultar-v .ant-tabla--fija tr.vid-detalle > td,
+  .consultar-v .vid-chev {
+    animation: none;
+    transition: none;
+  }
+}
+.consultar-v .vid-sub {
+  --vid-alto-input: 30px;
+}
+/* Los productos de la orden: la misma forma que `.pend-tabla`, sin borde
+   exterior ni grilla; sólo una línea bajo el encabezado y otra, muy suave, entre filas. */
+.consultar-v .cons-sub {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 13px;
+}
+.consultar-v .ant-tabla .cons-sub th {
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  color: var(--text-gray);
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  white-space: nowrap;
+}
+.consultar-v .ant-tabla .cons-sub th:first-child {
+  text-align: left;
+}
+.consultar-v .ant-tabla .cons-sub td {
+  padding: 0 8px;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #f0f1f4;
+  white-space: nowrap;
+  vertical-align: middle;
+  color: var(--text-dark);
+}
+/* Las filas miden SIEMPRE lo mismo, con o sin inputs: el alto del input (30px) más 8px arriba y
+   abajo. El alto va en la fila y no en las celdas, así editar no mueve la tabla. */
+.consultar-v .ant-tabla .cons-sub tbody tr {
+  height: calc(var(--vid-alto-input) + 16px);
+}
+.consultar-v .vid-num-c {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.consultar-v .cons-sub-prod {
+  font-weight: 600;
+}
+/* Lo que falta recibir: en azul y en negrita. */
+.consultar-v .ant-tabla .cons-sub td.cons-sub-falta {
+  font-weight: 800;
+  color: var(--primary-blue);
+}
+.consultar-v .cons-sub col.cons-sub-w-cod {
+  width: 110px;
+}
+.consultar-v .cons-sub col.cons-sub-w-uni {
+  width: 120px;
+}
+.consultar-v .cons-sub col.cons-sub-w-cant {
+  width: 130px;
+}
+.consultar-v .cons-sub col.cons-sub-w-estado {
+  width: 190px;
+}
+.consultar-v .vid-input {
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 96px;
+  height: var(--vid-alto-input);
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
+}
+.consultar-v .vid-input:focus {
+  outline: none;
+  border-color: var(--marca);
+  box-shadow: 0 0 0 3px var(--marca-suave);
+}
+.consultar-v .vid-input--mal {
+  border-color: #c0273c;
+}
+.consultar-v .cons-detalle-aviso {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--c-text-secondary);
+}
+.consultar-v .cons-detalle-aviso > i {
+  margin-right: 4px;
+  color: var(--c-primary);
+}
+/* Los avisos de la fila desplegada (leyendo, error, sin productos): centrados en el ancho de la fila. */
+.consultar-v .cons-detalle-aviso--centro {
+  padding: 8px 0;
+  text-align: center;
+}
+.consultar-v .cons-detalle-aviso--error,
+.consultar-v .cons-detalle-aviso--error > i {
+  color: #c0273c;
+  font-weight: 600;
+}
+.consultar-v .cobro-reintentar {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--c-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* "Descartar" de la edición: el botón de acción, pero en blanco. */
+.consultar-v .ag-acc--neutro {
+  background: #fff;
+  border-color: var(--c-border);
+  color: var(--c-text-main);
+}
+.consultar-v .ag-acc--neutro:hover:not(:disabled) {
+  background: #f5f6f8;
+}
+
+/* --- Ventanas de la operación --- */
+.consultar-v .cons-modal-tabla {
+  margin-top: 12px;
+  text-align: left;
+}
+.consultar-v .cons-btn-peligro {
+  background: #df2f4a;
+}
+.consultar-v .cons-btn-peligro:hover:not(:disabled) {
+  background: #c0273c;
+}
+.consultar-v .cons-destinatarios {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--c-text-secondary);
+  text-align: left;
+}
+.consultar-v .cons-destinatarios i {
+  margin-right: 4px;
+}
+.consultar-v .cons-destinatarios--error {
+  color: #c0273c;
+  font-weight: 600;
+}
+
+/* ===== Editar contacto (envío de la orden) ===== */
+.citem-editar {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-right: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.citem-editar:hover {
+  color: var(--primary-blue-hover);
+}
+.editar-contacto {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.editar-contacto > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-gray);
+}
+.editar-contacto input[type='email'] {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.editar-contacto .editar-contacto-input--error {
+  border-color: var(--red);
+}
+.editar-contacto-aviso {
+  font-size: 12px;
+  color: var(--red);
+}
+.editar-contacto .editar-contacto-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-dark);
+  cursor: pointer;
+}
+.editar-contacto-error {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--red);
+}
+
+/* Mientras se guarda una edición: tapa transparente sobre toda la pantalla. */
+.consultar-v .cons-bloqueo {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: transparent;
+  cursor: wait;
+}
+.consultar-v .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

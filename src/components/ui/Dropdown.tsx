@@ -12,6 +12,8 @@ interface DropdownProps<T> {
   itemClassName?: string
   /** Deshabilita el control: no abre el menú (p. ej. mientras se cargan sus opciones). */
   disabled?: boolean
+  /** Clase extra del contenedor (p. ej. `dd--operacion`, más ancho que el de 240px). */
+  className?: string
 }
 
 /** Selector con menú desplegable, usado para operación y vendedor. */
@@ -23,6 +25,7 @@ export function Dropdown<T>({
   onSelect,
   itemClassName = '',
   disabled = false,
+  className = '',
 }: DropdownProps<T>) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -30,7 +33,7 @@ export function Dropdown<T>({
   useClickOutside(ref, close, open)
 
   return (
-    <div className="dd dd--bare selbox--fix" ref={ref}>
+    <div className={`dd dd--bare selbox--fix ${className}`} ref={ref}>
       <button
         type="button"
         className="selbox selbox--fix selbox--btn"

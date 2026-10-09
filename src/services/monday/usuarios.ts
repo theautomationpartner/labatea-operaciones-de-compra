@@ -35,6 +35,7 @@ const iniciales = (nombre: string): string =>
 interface UsuarioApi {
   id: string
   name: string
+  email?: string | null
   is_admin?: boolean | null
   enabled?: boolean | null
   teams?: { id: string }[] | null
@@ -66,7 +67,7 @@ async function leerEquipo(): Promise<Equipo> {
      con `is_admin`, que sí existe en esa versión. */
   const data = await mondayApi<{ users?: UsuarioApi[] | null; me?: UsuarioApi | null }>(
     `query {
-      users(limit: 200) { id name is_admin enabled teams { id } }
+      users(limit: 200) { id name email is_admin enabled teams { id } }
       me { id name is_admin teams { id } }
     }`,
   )
@@ -89,6 +90,7 @@ export async function getCompradores(): Promise<Comprador[]> {
     .map((u, i) => ({
       id: String(u.id),
       name: u.name,
+      email: u.email ?? '',
       ini: iniciales(u.name),
       color: COLORES_COMPRADOR[i % COLORES_COMPRADOR.length],
       equiposIds: equiposDe(u),

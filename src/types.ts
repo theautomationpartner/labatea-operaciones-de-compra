@@ -4,15 +4,31 @@
  * Las operaciones que ofrece el selector superior. Por ahora tres; el orden en que se muestran
  * vive en `OPERACIONES` (`lib/pasos.ts`).
  */
-export type Operacion = 'ORDEN DE COMPRA' | 'CARGAR FACTURA' | 'CARGAR REMITO'
+export type Operacion =
+  | 'CREAR ORDEN DE COMPRA'
+  | 'CARGAR COMPROBANTE DE COMPRA'
+  | 'CARGAR REMITO'
+  | 'CONSULTAR ÓRDENES DE COMPRA'
+  | 'ACTUALIZAR PRECIOS'
 
 /**
  * Cada pantalla del flujo. `inicio` es el paso 0: elegir operación y comprador.
  *
- * Las tres etapas de la ORDEN DE COMPRA son `proveedor` → `productos` → `emision`. Las otras dos
- * operaciones todavía no tienen recorrido propio y comparten éste (ver `lib/pasos`).
+ * Las tres etapas de la ORDEN DE COMPRA son `proveedor` → `productos` → `emision`. CARGAR
+ * COMPROBANTE DE COMPRA arranca por la MISMA elección de proveedor y sigue en `comprobante` (los
+ * datos iniciales). CARGAR REMITO todavía no tiene recorrido propio y comparte el de la orden.
+ * CONSULTAR ÓRDENES DE COMPRA y ACTUALIZAR PRECIOS son pantallas únicas, sin stepper: `consultar`
+ * y `precios`.
  */
-export type Paso = 'inicio' | 'proveedor' | 'productos' | 'emision'
+export type Paso =
+  | 'inicio'
+  | 'proveedor'
+  | 'productos'
+  | 'emision'
+  | 'consultar'
+  | 'precios'
+  | 'preciosComprobante'
+  | 'comprobante'
 
 /**
  * Quien firma la operación de compra: el espejo del "vendedor" de la app de ventas.
@@ -25,6 +41,8 @@ export interface Comprador {
   id: string
   ini: string
   name: string
+  /** Correo del usuario de Monday. */
+  email: string
   color: string
   /** Equipos de Monday del usuario. De acá va a salir el rol cuando se sume el RBAC. */
   equiposIds: string[]
@@ -48,7 +66,7 @@ export interface UsuarioActual {
 
 export type SituacionPersona = 'Liberado con crédito' | 'Liberado sin crédito' | 'Bloqueado'
 export type ActividadPersona = 'Activo' | 'Inactivo'
-/** Etiquetas de "✋️Cond Pago Habilitadas". Sólo CUENTA CORRIENTE habilita la orden de compra. */
+/** Etiquetas de "✋️Cond Pago Habilitadas". Ninguna restringe la orden: deciden si rige el crédito. */
 export type CondicionPago =
   | 'CONTADO'
   | 'CUENTA CORRIENTE'
@@ -77,6 +95,11 @@ export interface Persona {
   agenteRetencion: boolean
   condicionPago: CondicionPago | null
   limit: number
+  /**
+   * "✋️OC 100% Recibida en:": días en que debería recibirse toda la mercadería de una orden.
+   * `null` = el proveedor no lo tiene cargado.
+   */
+  diasRecepcion: number | null
   /** Deuda de la cuenta corriente: total facturado − total pagado. */
   saldoCtaCte: number
   lineaUtilizada: number
@@ -132,6 +155,12 @@ export interface Producto {
    * NO es el precio unitario; ése se deriva (ver `lib/compras`).
    */
   costoReposicion: number
+  /** "✋️Costo x Unid": el precio de lista del proveedor, ANTES de descuentos y bonificación. */
+  precioUnitario: number
+  /** "✋️Descuento 1..4" en %, sólo los cargados (distintos de cero), en orden. */
+  descuentos: number[]
+  /** "✋️Bonif En Mercaderia" en %. 0 = sin bonificación. */
+  bonifMercaderia: number
   /** "✋Tipo Envase Compra": en qué se compra el producto (Kilos, Paquete, Frasco…). */
   unidadCompra: string
   /**
@@ -139,11 +168,25 @@ export interface Producto {
    * al producto sólo se le puede sumar o restar de a esta cantidad. Sin el dato cargado vale 1.
    */
   cantXUnidad: number
-  /** "🤖Proveedor" (board_relation_mm4812az): de quién se compra. Es la regla que restringe la orden. */
+  /**
+   * La "Cant x Envase" del Maestro, cuando un administrador la ALTERÓ para esta orden. Sólo existe
+   * en ese caso: `cantXUnidad` lleva el valor de la orden y éste el original, para mostrarlo.
+   */
+  cantXUnidadMaestro?: number
+  /**
+   * "🤖Proveedor" (board_relation_mm7wfzw8): a quiénes se les puede comprar. Un producto puede
+   * estar asociado a VARIOS proveedores; es la regla que restringe el catálogo de la orden.
+   */
+  provIds: string[]
+  /** El primero de `provIds`, el que se muestra. `null` sin proveedor asociado. */
   provId: string | null
   provNombre: string
   provCod: string
   tipo: string
+  /** "✋Tipo de Venta" = CO. Es informativo: no bloquea nada, sólo se etiqueta. */
+  consignado: boolean
+  /** "✋Estado" = Activo. Un producto inactivo NO se puede pedir en una orden de compra. */
+  activo: boolean
   rubro: string
   subrubro: string
   categoria: string
@@ -191,6 +234,8 @@ export interface Contacto {
   status: string
   /** Su "✋Para Enviar" incluye este documento: arranca preseleccionado. */
   ok: boolean
+  /** Todas las etiquetas de su "✋Para Enviar", tal como están en Monday. */
+  paraEnviar: string[]
 }
 
 export type MedioEnvio = 'Email' | 'WhatsApp' | 'Ambos'
@@ -203,4 +248,37 @@ export interface LogEntry {
   tipo: LogTipo
   titulo: string
   detalle: string
+}
+
+/* ===== Comprobante de compra (CARGAR COMPROBANTE DE COMPRA) ===== */
+
+/** Qué comprobante del proveedor se carga. Es obligatorio elegirlo antes de soltar el archivo. */
+export type TipoComprobante = 'Factura A' | 'Factura C' | 'Nota de Crédito A' | 'Nota de Débito'
+
+/**
+ * Los datos del comprobante que se completan solos al cargar el archivo. Todos van como texto, tal
+ * como se leen del documento: el formato (fechas, importes) se resuelve cuando se definan la lectura
+ * y el registro en Monday.
+ */
+export interface DatosComprobante {
+  nroComprobante: string
+  fechaEmision: string
+  fechaVencimiento: string
+  importeNeto: string
+  iva: string
+  percIibb: string
+  percIg: string
+  total: string
+  condicionPago: string
+  razonSocialEmisor: string
+  idFiscalEmisor: string
+  cae: string
+  fechaVencCae: string
+}
+
+/** Lo cargado en la etapa de datos iniciales. Vive en el estado global: sobrevive al stepper. */
+export interface BorradorComprobante {
+  tipo: TipoComprobante | null
+  archivo: File | null
+  datos: DatosComprobante
 }

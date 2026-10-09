@@ -1,18 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AvisoModal } from '@/components/ui/AvisoModal'
 import { ContactosPicker } from '@/features/shared/ContactosPicker'
+import { EditarContactoModal } from '@/features/shared/EditarContactoModal'
 import { useBloqueoCredito } from '@/features/shared/useBloqueoCredito'
+import { casillaDeEnvio } from '@/lib/permisos'
 import {
   contactosSinVia,
   faltaParaMedio,
   msgContactoSinVia,
   sinViaDeEnvio,
 } from '@/lib/validaciones'
-import { DOCUMENTO_ORDEN_COMPRA, getContactosProveedor } from '@/services/monday'
+import { enviarOrdenCompraMake, type ResultadoEnvioOrden } from '@/services/make/envioOrdenCompra'
+import { getContactosProveedor } from '@/services/monday'
+import { fechaHoyAR, fechaRecepcionEstimada, totalOrden } from '@/lib/ordenDoc'
 import { useApp, useDispatch } from '@/state/hooks'
 import type { Contacto, LogEntry, MedioEnvio } from '@/types'
-
-const MEDIOS: readonly MedioEnvio[] = ['Email', 'WhatsApp', 'Ambos']
 
 /** Ícono de cada tipo de aviso del envío, al lado de su detalle. */
 const ICONO_LOG: Record<LogEntry['tipo'], string> = {
@@ -21,18 +23,54 @@ const ICONO_LOG: Record<LogEntry['tipo'], string> = {
   info: 'fa-circle-info',
 }
 
-/**
- * Un <option> nativo sólo admite texto, así que el ícono va como emoji.
- * 'Ambos' no tiene app propia: lleva el sobre y el chat juntos.
- */
-const ICONO_MEDIO: Record<MedioEnvio, string> = {
-  Email: '📧',
-  WhatsApp: '💬',
-  Ambos: '📧💬',
-}
-
 /** Estado del envío, que se muestra como una sola línea dentro de la card. */
 type EstadoEnvio = 'idle' | 'enviando' | 'enviado' | 'error'
+
+/** Los textos que cambian según qué documento se envía. */
+export interface TextosEnvio {
+  cargando: string
+  sinContactosTitulo: string
+  sinContactosTexto: ReactNode
+  noEmitidoTitulo: string
+  noEmitidoTexto: string
+  errorTitulo: string
+  enviadoTitulo: string
+}
+
+/**
+ * QUÉ se envía, A QUIÉN y CÓMO. Sin `fuente`, el componente envía la orden de compra a los contactos
+ * del proveedor (su uso original); con ella, el mismo componente —mismo layout, estados y
+ * validaciones— envía otro documento, como el comprobante de una actualización de costos.
+ */
+export interface FuenteEnvio {
+  /** El PDF a enviar. `null` = todavía no está generado: no se puede enviar. */
+  pdf: File | null
+  /** Identifica la lista de contactos: cuando cambia, se vuelven a pedir. */
+  claveContactos: string
+  cargarContactos: () => Promise<Contacto[]>
+  enviar: (d: {
+    pdf: File
+    contactos: readonly Contacto[]
+    medio: MedioEnvio
+    casilla: string
+  }) => Promise<ResultadoEnvioOrden>
+  textos: TextosEnvio
+  /** Los contactos se pueden editar en Monday (sólo los del tablero de Contactos). */
+  editables: boolean
+  /** Se frena si el proveedor está bloqueado (sólo para lo que se le manda AL proveedor). */
+  validarCredito: boolean
+}
+
+const TEXTOS_ORDEN: TextosEnvio = {
+  cargando: 'Cargando contactos del proveedor…',
+  sinContactosTitulo: 'El proveedor no tiene contactos asignados',
+  sinContactosTexto:
+    'no tiene contactos cargados en el tablero de Contactos, así que no es posible realizar el envío. Asignale al menos un contacto y volvé a reintentar.',
+  noEmitidoTitulo: 'Falta emitir el comprobante',
+  noEmitidoTexto: 'No es posible realizar el envío. Primero debe emitir la orden de compra para poder enviarla.',
+  errorTitulo: 'No se pudo enviar la orden',
+  enviadoTitulo: 'Orden enviada',
+}
 
 /**
  * Envío de la orden de compra a los contactos del proveedor.
@@ -42,20 +80,79 @@ type EstadoEnvio = 'idle' | 'enviando' | 'enviado' | 'error'
  * UN solo comprobante (así que no existe el catálogo `comprobantesEnviables` que allá elige entre
  * cuatro) y los contactos son los del proveedor.
  *
- * ── PENDIENTE · el envío todavía no se dispara ──
- * El tablero "🛒 Orden Compra" no tiene dónde guardar los destinatarios (no hay relación al board
- * de Contactos) ni el medio elegido (no hay dropdown Email/WhatsApp). Sin esas dos columnas, poner
- * su "🤖Medio de Envío" en "Enviar" largaría una automatización que no sabe a quién escribirle.
- * Mandar a ciegas es peor que no mandar, así que el botón arma todo y frena con una explicación.
- * Cuando las columnas existan, se completa `despachar()` y se saca el freno.
+ * El envío sale por el escenario de Make.com, igual que el presupuesto en ventas: la orden todavía
+ * NO existe en Monday —nace recién cuando el envío se confirma—, así que el PDF emitido viaja en el
+ * pedido junto con los destinatarios, el medio y la CASILLA desde la que sale el correo (la de Mechi
+ * para sus órdenes, la de logística para el resto: ver `lib/permisos.casillaDeEnvio`).
+ *
+ * Sólo se puede enviar con la orden EMITIDA (su PDF generado). Cuando el envío queda en "Enviado",
+ * avisa a la vista (`onEnviado`), que es la que registra la orden en Monday.
+ *
+ * Con `fuente`, el MISMO componente envía otro documento a otros destinatarios: ACTUALIZAR PRECIOS
+ * lo usa para mandar el reporte de la actualización a Administración y Compras.
  */
-export function EnviarDocumento() {
-  const { medioEnvio, contactos, proveedor, documentoEmitido, documentoEnviado, log } = useApp()
+export function EnviarDocumento({
+  onEnviado,
+  fuente: fuenteExterna,
+}: {
+  onEnviado?: (cuando: Date) => void
+  fuente?: FuenteEnvio
+}) {
+  const {
+    medioEnvio,
+    contactos,
+    proveedor,
+    comprador,
+    nroOrden,
+    ordenPdf,
+    lineas,
+    documentoEmitido,
+    documentoEnviado,
+    log,
+  } = useApp()
   const dispatch = useDispatch()
+  const casilla = casillaDeEnvio(comprador)
+
+  /* Sin fuente externa: la orden de compra, a los contactos del proveedor, por su escenario. */
+  const fuenteOrden = useMemo<FuenteEnvio>(
+    () => ({
+      pdf: documentoEmitido ? ordenPdf : null,
+      claveContactos: proveedor?.id ?? '',
+      cargarContactos: () => (proveedor ? getContactosProveedor(proveedor.id) : Promise.resolve([])),
+      enviar: ({ pdf, contactos: cs, medio, casilla: desde }) =>
+        enviarOrdenCompraMake({
+          numero: nroOrden ?? '',
+          fechaEmision: fechaHoyAR(),
+          fechaRecepcionEstimada: proveedor ? fechaRecepcionEstimada(fechaHoyAR(), proveedor.diasRecepcion) : null,
+          proveedor: proveedor!,
+          comprador,
+          casilla: desde,
+          medio,
+          contactos: cs,
+          total: totalOrden(lineas),
+          pdf,
+        }),
+      textos: TEXTOS_ORDEN,
+      editables: true,
+      validarCredito: true,
+    }),
+    [documentoEmitido, ordenPdf, proveedor, nroOrden, comprador, lineas],
+  )
+  const fuente = fuenteExterna ?? fuenteOrden
+  const textos = fuente.textos
+  /* La carga de contactos se lee por ref: la función cambia en cada render, la lista no. */
+  const cargarRef = useRef(fuente.cargarContactos)
+  cargarRef.current = fuente.cargarContactos
   // Aviso al intentar enviar sin haber emitido la orden todavía.
   const [avisoNoEmitido, setAvisoNoEmitido] = useState(false)
-  // Aviso de las columnas que le faltan al tablero para poder despachar.
-  const [avisoSinColumnas, setAvisoSinColumnas] = useState(false)
+  // Si se sale del paso mientras se espera el envío, no se actualiza un componente desmontado.
+  const activo = useRef(true)
+  useEffect(() => {
+    activo.current = true
+    return () => {
+      activo.current = false
+    }
+  }, [])
   /* El envío no consume línea nueva: el bloqueo sólo mira el estado del proveedor, no un importe
      (por eso va con cero). */
   const bloqueo = useBloqueoCredito(0)
@@ -87,6 +184,8 @@ export function EnviarDocumento() {
    * sumar.
    */
   const [disponibles, setDisponibles] = useState<Contacto[]>([])
+  // Contacto abierto en la ventana de edición.
+  const [editando, setEditando] = useState<Contacto | null>(null)
   const [cargando, setCargando] = useState(false)
   // Si el proveedor no tiene ningún contacto en el tablero, el envío no es posible.
   const [sinContactos, setSinContactos] = useState(false)
@@ -95,7 +194,7 @@ export function EnviarDocumento() {
   const contactosRef = useRef(contactos)
   contactosRef.current = contactos
   useEffect(() => {
-    if (!proveedor) {
+    if (!fuente.claveContactos) {
       setDisponibles([])
       return
     }
@@ -103,7 +202,7 @@ export function EnviarDocumento() {
     setCargando(true)
     /* La consulta está CACHEADA por proveedor: al volver a esta etapa con el stepper resuelve al
        instante y no se le pega de nuevo a Monday ni parpadea el "Cargando contactos…". */
-    getContactosProveedor(proveedor.id)
+    cargarRef.current()
       .then((cs) => {
         if (!vivo) return
         setSinContactos(cs.length === 0)
@@ -121,7 +220,7 @@ export function EnviarDocumento() {
         if (!vivo) return
         setDisponibles([])
         setSinContactos(true)
-        dispatch({ type: 'errorMonday', accion: 'traer los contactos del proveedor' })
+        dispatch({ type: 'errorMonday', accion: 'traer los contactos para el envío' })
       })
       .finally(() => {
         if (vivo) setCargando(false)
@@ -129,7 +228,7 @@ export function EnviarDocumento() {
     return () => {
       vivo = false
     }
-  }, [proveedor, dispatch])
+  }, [fuente.claveContactos, dispatch])
 
   /**
    * Frena el envío cuando algún contacto elegido no tiene el dato que el medio necesita, y explica
@@ -162,7 +261,7 @@ export function EnviarDocumento() {
     if (enviando || enviadoOk) return
     /* Sin la orden emitida NO se envía: early return sin tocar la API de Monday, y se avisa por
        modal que primero hay que emitirla. */
-    if (!documentoEmitido) {
+    if (!fuente.pdf) {
       setAvisoNoEmitido(true)
       return
     }
@@ -170,11 +269,55 @@ export function EnviarDocumento() {
        actual, no se manda nada. Que la mitad de la lista quede afuera en silencio es peor que
        frenar y decir quién falta. */
     if (frenarPorContactoSinVia()) return
-    // El envío es una salida del sistema: no sale nada de un proveedor bloqueado.
-    if (bloqueo.frenar()) return
-    /* Última parada: el tablero todavía no puede recibir ni los destinatarios ni el medio. Ver la
-       nota del encabezado del archivo. */
-    setAvisoSinColumnas(true)
+    // El envío al proveedor es una salida del sistema: no sale nada de un proveedor bloqueado.
+    if (fuente.validarCredito && bloqueo.frenar()) return
+    void despachar(fuente.pdf)
+  }
+
+  /**
+   * Manda el PDF emitido por el escenario de Make.com y espera su respuesta. Enviado, la bandera
+   * global queda arriba y se le avisa a la vista para que registre la orden en Monday.
+   */
+  const despachar = async (pdf: File) => {
+    setEstadoEnvio('enviando')
+    dispatch({ type: 'setLog', entries: null })
+    const resultado = await fuente.enviar({ pdf, contactos, medio: medioEnvio, casilla })
+    if (!activo.current) return
+    if (!resultado.ok) {
+      setEstadoEnvio('error')
+      dispatch({
+        type: 'setLog',
+        entries: [
+          {
+            id: 'envio-err',
+            tipo: 'err',
+            titulo: textos.errorTitulo,
+            detalle: `${resultado.mensaje} Reintentá cuando esté resuelto.`,
+          },
+        ],
+      })
+      return
+    }
+    setEstadoEnvio('enviado')
+    dispatch({ type: 'setDocumentoEnviado', value: true })
+    dispatch({
+      type: 'setLog',
+      entries: [
+        {
+          id: 'envio-ok',
+          tipo: 'ok',
+          titulo: textos.enviadoTitulo,
+          detalle: `Salió desde ${casilla} a ${contactos.length} contacto${contactos.length === 1 ? '' : 's'}.`,
+        },
+        /* Envío parcial: la orden ya le llegó a alguien, así que se da por enviada (reintentar se la
+           mandaría dos veces a los que sí la recibieron), pero se dice a quién no le llegó. */
+        ...(resultado.aviso
+          ? [{ id: 'envio-parcial', tipo: 'info' as const, titulo: 'Envío parcial', detalle: resultado.aviso }]
+          : []),
+      ],
+    })
+    // "Enviado": la vista registra la orden en Monday.
+    onEnviado?.(new Date())
   }
 
   return (
@@ -184,44 +327,36 @@ export function EnviarDocumento() {
           "Enviado exitosamente" tiene que seguir a la vista aunque se vuelva a entrar a la etapa. */}
       {cargando && !enviadoOk ? (
         <div className="contactos-cargando">
-          <i className="fas fa-spinner fa-spin" /> Cargando contactos del proveedor…
+          <i className="fas fa-spinner fa-spin" /> {textos.cargando}
         </div>
       ) : sinContactos && !enviadoOk ? (
         /* Sin contactos en el tablero no hay a quién enviarle: se explica y no se ofrece envío. */
         <div className="envio-sin-contactos" role="alert">
           <i className="fas fa-triangle-exclamation" />
           <div>
-            <div className="envio-sin-contactos-t">El proveedor no tiene contactos asignados</div>
+            <div className="envio-sin-contactos-t">{textos.sinContactosTitulo}</div>
             <p>
-              {proveedor?.name ? <strong>{proveedor.name}</strong> : 'Este proveedor'} no tiene
-              contactos cargados en el tablero de Contactos, así que no es posible realizar el
-              envío. Asignale al menos un contacto y volvé a reintentar.
+              {fuenteExterna ? (
+                textos.sinContactosTexto
+              ) : (
+                <>
+                  {proveedor?.name ? <strong>{proveedor.name}</strong> : 'Este proveedor'} {textos.sinContactosTexto}
+                </>
+              )}
             </p>
           </div>
         </div>
       ) : (
         <>
+          {/* El medio no se elige: la orden sale siempre por Email. Se muestra fijo para que se sepa
+              por dónde sale. */}
           <div className="igp">
-            <label htmlFor="medio">Medio de envío *</label>
-            <select
-              id="medio"
-              className="full w-medio"
-              style={{ cursor: 'pointer' }}
-              value={medioEnvio}
-              onChange={(e) => {
-                /* Cambiar el medio puede resolver el problema —o crear otro—: en los dos casos el
-                   aviso anterior ya no aplica. */
-                limpiarIntento()
-                dispatch({ type: 'setMedioEnvio', value: e.target.value as MedioEnvio })
-              }}
-            >
-              {/* El value queda limpio: el emoji es sólo la etiqueta. */}
-              {MEDIOS.map((m) => (
-                <option key={m} value={m}>
-                  {ICONO_MEDIO[m]} {m}
-                </option>
-              ))}
-            </select>
+            <div className="envio-medio-linea">
+              <span className="envio-medio-lbl">Medio de Envío por defecto:</span>
+              <div className="envio-medio-fijo">
+                <i className="fas fa-envelope" aria-hidden="true" /> Email
+              </div>
+            </div>
           </div>
 
           <ContactosPicker disponibles={disponibles} />
@@ -257,6 +392,13 @@ export function EnviarDocumento() {
                     </div>
                   </div>
                   <div className="citem-right">
+                    {/* Editar el email del contacto y si acepta la orden de compra, en Monday. Con el
+                        envío en curso o hecho no se toca: cambiaría a quién se le mandó. */}
+                    {fuente.editables && !enviando && !enviadoOk && c.itemId && (
+                      <button type="button" className="citem-editar" onClick={() => setEditando(c)}>
+                        Editar
+                      </button>
+                    )}
                     {/* El color del badge ya dice si acepta o no: no hace falta rótulo ni ícono. */}
                     <span className={`cbadge ${c.ok ? 'ok' : 'no'}`}>{c.status}</span>
                     <button
@@ -339,31 +481,28 @@ export function EnviarDocumento() {
 
       {bloqueo.modal}
 
+      {editando && proveedor && (
+        <EditarContactoModal
+          contacto={editando}
+          proveedorId={proveedor.id}
+          onClose={() => setEditando(null)}
+          onGuardado={(actualizado) => {
+            // Lo que se editó puede ser justo lo que frenaba el envío: el aviso viejo ya no aplica.
+            limpiarIntento()
+            dispatch({ type: 'actualizarContacto', contacto: actualizado })
+            setDisponibles((cs) => cs.map((c) => (c.id === actualizado.id ? actualizado : c)))
+            setEditando(null)
+          }}
+        />
+      )}
+
       {/* Aviso al intentar enviar sin haber emitido la orden. */}
       {avisoNoEmitido && (
-        <AvisoModal titulo="Falta emitir el comprobante" onClose={() => setAvisoNoEmitido(false)}>
-          No es posible realizar el envío. Primero debe emitir la orden de compra para poder
-          enviarla.
+        <AvisoModal titulo={textos.noEmitidoTitulo} onClose={() => setAvisoNoEmitido(false)}>
+          {textos.noEmitidoTexto}
         </AvisoModal>
       )}
 
-      {/* El tablero todavía no puede registrar el envío. Se dice qué falta y dónde. */}
-      {avisoSinColumnas && (
-        <AvisoModal
-          titulo="El tablero todavía no puede registrar el envío"
-          faltantes={[
-            'Una columna de conexión al tablero "Contactos" (18420688239), para los destinatarios',
-            'Una columna desplegable con las opciones Email y WhatsApp, para el medio',
-            `La etiqueta "${DOCUMENTO_ORDEN_COMPRA}" en la columna "✋Para Enviar" del tablero de Contactos`,
-          ]}
-          onClose={() => setAvisoSinColumnas(false)}
-        >
-          La orden ya está emitida y los destinatarios están elegidos, pero el tablero{' '}
-          <strong>🛒 Orden Compra</strong> no tiene dónde guardarlos. Disparar el envío igual
-          largaría la automatización sin saber a quién escribirle, así que se frena acá. Falta
-          crear en Monday:
-        </AvisoModal>
-      )}
     </div>
   )
 }

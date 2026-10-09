@@ -1,0 +1,247 @@
+/* CARGAR COMPROBANTE DE COMPRA (etapa 2 · Cargar Datos Iniciales): el tipo de comprobante y el
+   recuadro de arrastrar y soltar a la izquierda, los datos del comprobante a la derecha. Es el
+   formulario de la carga de la OP de HETMO (app de Polifroni). El recuadro y la barra de progreso
+   toman sus estilos de precios.css (`:is(.precios-v, .comprobante-v) .cobro-lector*`). */
+
+.comprobante-v {
+  /* Las del recuadro de arrastrar y soltar (cobro.css de La Batea), con sus mismos valores. */
+  --c-bg-input: #ffffff;
+  --c-text-main: #1f2937;
+  --c-text-secondary: #667085;
+  --c-primary: #0052cc;
+  --c-primary-hover: #0043a6;
+  --c-success: #00c875;
+  --c-danger: #e44258;
+  --c-warning: #fdab3d;
+  --c-radius-lg: 12px;
+
+  /* Mismo contenedor que las demás etapas. */
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ════════════════════ Bloque de carga: izquierda + derecha ════════════════════ */
+/* UNA sola card partida al medio, a la misma altura (la fila del grid se estira). */
+.comp-carga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 12px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 4px 12px rgba(0, 0, 0, 0.04);
+}
+@media (max-width: 900px) {
+  .comp-carga {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.comp-izq {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* El tipo de comprobante: la `.cfgbox` de views.css. Obligatorio: si falta, se marca en rojo. */
+.comp-tipo--falta {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(226, 68, 92, 0.12);
+}
+.comp-tipo--falta .cfg-ic {
+  background: var(--red);
+}
+.comp-req {
+  color: var(--red);
+  font-weight: 700;
+}
+.comp-reclamo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -6px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--red);
+}
+
+/* El recuadro llena el resto de la columna: ancho completo y, como mínimo, el alto de La Batea. */
+.comprobante-v .comp-izq > .cobro-lector {
+  flex: 1 1 auto;
+  width: auto;
+  max-width: none;
+  height: auto;
+  min-height: 320px;
+}
+
+/* ════════════════════ Datos del comprobante (derecha) ════════════════════ */
+.cdc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 4px 4px 0;
+}
+.cdc-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.cdc-titulo > i {
+  color: var(--primary-blue);
+}
+.cdc-estado {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-gray, #667085);
+}
+
+/* Sin comprobante: la mitad derecha queda reservada con la consigna. */
+.cdc--vacio {
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  border: 1px dashed #d0d5dd;
+  border-radius: 12px;
+  background: #f9fafb;
+  text-align: center;
+  color: var(--text-gray, #667085);
+}
+.cdc--vacio > i {
+  font-size: 34px;
+  color: #98a2b3;
+}
+.cdc--vacio p {
+  max-width: 320px;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.cdc-grupo {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.cdc-grupo-t {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #667085;
+}
+.cdc-grupo-t > i {
+  color: #98a2b3;
+}
+.cdc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+.cdc-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cdc-campo--ancho {
+  grid-column: 1 / -1;
+}
+.cdc-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475467;
+}
+.cdc-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.cdc-signo {
+  position: absolute;
+  left: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #98a2b3;
+  pointer-events: none;
+}
+.cdc-input {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 14px;
+  color: #1f2937;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+}
+.cdc-input-box--importe .cdc-input {
+  padding-left: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.cdc-input:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(0, 115, 234, 0.12);
+}
+.cdc-input--total {
+  font-weight: 700;
+}
+
+/* Leyendo: los campos se ven, pero no se tocan. El gris con brillo dice "se está completando". */
+.cdc-grupo:disabled .cdc-input {
+  cursor: not-allowed;
+  background: #f2f4f7;
+  color: #667085;
+}
+.cdc--leyendo .cdc-input {
+  background: linear-gradient(90deg, #f2f4f7 25%, #e9ecf2 37%, #f2f4f7 63%);
+  background-size: 400% 100%;
+  animation: cdc-brillo 1.4s ease infinite;
+}
+@keyframes cdc-brillo {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cdc--leyendo .cdc-input {
+    animation: none;
+  }
+}
+@media (max-width: 520px) {
+  .cdc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

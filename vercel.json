@@ -14,5 +14,11 @@
       ]
     }
   ],
-  "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }]
+  "functions": {
+    "api/precios-ia.ts": {
+      "maxDuration": 300,
+      "includeFiles": "prompts/**"
+    }
+  },
+  "rewrites":[{ "source": "/((?!api/).*)", "destination": "/index.html" }]
 }

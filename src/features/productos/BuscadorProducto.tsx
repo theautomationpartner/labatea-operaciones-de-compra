@@ -1,6 +1,11 @@
 import { useCallback, useRef, useState } from 'react'
+import { ConsignadoTag } from '@/components/ui/Etiquetas'
 import { useClickOutside } from '@/hooks/useClickOutside'
-import { buscarProductos, siguientePaginaProductos } from '@/services/monday'
+import {
+  buscarProductos,
+  existeFueraDelProveedor,
+  siguientePaginaProductos,
+} from '@/services/monday'
 import { useApp, useDispatch } from '@/state/hooks'
 import type { Producto } from '@/types'
 import {
@@ -34,6 +39,11 @@ interface BuscadorProductoProps {
    * producto elegido, en vez de debajo del campo.
    */
   onAviso?: (aviso: string) => void
+  /**
+   * Lo buscado no está entre los productos del proveedor, pero SÍ existe en el catálogo (es de
+   * otro proveedor). El padre lo avisa con una ventana; acá no se deja aviso en línea.
+   */
+  onOtroProveedor?: () => void
 }
 
 /**
@@ -47,7 +57,12 @@ interface BuscadorProductoProps {
  * cursor, filas elegidas marcadas—, así se puede tomar otro producto de esa misma búsqueda. Recién
  * una búsqueda nueva los reemplaza.
  */
-export function BuscadorProducto({ proveedorId, onSelect, onAviso }: BuscadorProductoProps) {
+export function BuscadorProducto({
+  proveedorId,
+  onSelect,
+  onAviso,
+  onOtroProveedor,
+}: BuscadorProductoProps) {
   const { filtros } = useApp()
   const dispatch = useDispatch()
   const [termino, setTermino] = useState('')
@@ -100,6 +115,12 @@ export function BuscadorProducto({ proveedorId, onSelect, onAviso }: BuscadorPro
     try {
       const res = await buscarProductos(t, filtros, proveedorId)
       if (res.productos.length === 0) {
+        /* No está entre los del proveedor: si existe en el catálogo, es de OTRO proveedor, y eso
+           se avisa con una ventana en vez del "sin resultados", que haría creer que no existe. */
+        if (onOtroProveedor && (await existeFueraDelProveedor(t, filtros))) {
+          onOtroProveedor()
+          return
+        }
         /* El "sin resultados" de compras dice algo más que el de ventas, y a propósito: la causa
            más probable NO es que el producto no exista, sino que exista y no esté conectado a ESTE
            proveedor en el Maestro. Sin decirlo, el usuario buscaría de nuevo un producto que ve en
@@ -214,7 +235,11 @@ export function BuscadorProducto({ proveedorId, onSelect, onAviso }: BuscadorPro
                     elegido ? 'Ya seleccionado. Volvé a hacer click para cargarlo de nuevo.' : undefined
                   }
                 >
-                  <span className="ritem-name">{p.nombre}</span>
+                  {/* El nombre y, a su derecha, la etiqueta dorada de consignado. */}
+                  <span className="ritem-name-wrap">
+                    <span className="ritem-name">{p.nombre}</span>
+                    {p.consignado && <ConsignadoTag />}
+                  </span>
                   <span className="ritem-meta">
                     <span className="ritem-code">{p.codigo}</span>
                     {elegido && (

@@ -1,6 +1,8 @@
-import { cantPorEnvase } from '@/lib/compras'
-import { pasosKeysDe } from '@/lib/pasos'
+import { cantPorEnvase, envasesDe } from '@/lib/compras'
+import { pasoInicialDe, pasosKeysDe } from '@/lib/pasos'
+import type { ActualizacionHecha } from '@/lib/precios'
 import type {
+  BorradorComprobante,
   Comprador,
   Contacto,
   Filtro,
@@ -39,12 +41,21 @@ export interface AppState {
   filtros: Filtro[]
 
   /* ===== ETAPA 3 · emisión y envío ===== */
-  /** ID del ítem de la orden en Monday. Nace al emitir; `null` mientras no se creó. */
-  ordenCompraId: string | null
-  /** La orden ya se emitió en el tablero. Bandera GLOBAL: sobrevive a navegar con el stepper. */
+  /**
+   * Número de la orden ("OC-006"): el próximo "🤖ID Compra" del tablero, leído al confirmar la
+   * operación. Es el que se imprime en el PDF, que se genera ANTES de registrar la orden.
+   */
+  nroOrden: string | null
+  /** El PDF de la orden, generado en la app al emitir. Es el que se envía y se sube a Monday. */
+  ordenPdf: File | null
+  /** La orden ya tiene su PDF generado. Bandera GLOBAL: sobrevive a navegar con el stepper. */
   documentoEmitido: boolean
-  /** El documento ya se envió a los contactos. Misma persistencia que la de emisión. */
+  /** La orden ya se envió al proveedor. Misma persistencia que la de emisión. */
   documentoEnviado: boolean
+  /** ID del ítem de la orden en Monday. Nace al registrarla, después del envío. */
+  ordenCompraId: string | null
+  /** La orden quedó registrada en Monday con sus subelementos y su PDF: se puede finalizar. */
+  ordenRegistrada: boolean
   /** Contactos del proveedor elegidos como destinatarios. */
   contactos: Contacto[]
   medioEnvio: MedioEnvio
@@ -56,7 +67,54 @@ export interface AppState {
    * ventana global de error (`ModalErrorMonday`); `null` = no hay error en pantalla.
    */
   errorMonday: string | null
+
+  /* ===== ACTUALIZAR PRECIOS ===== */
+  /**
+   * La última actualización confirmada: la arma la etapa "Actualizar Precios" y la lee
+   * "Comprobante y Envío". `null` = todavía no se confirmó ninguna.
+   */
+  actualizacionPrecios: ActualizacionHecha | null
+  /**
+   * Hay un proceso en curso que no se puede abandonar (el análisis de una lista de precios): no se
+   * puede cambiar de operación ni saltar de etapa con el stepper.
+   */
+  navegacionBloqueada: boolean
+  /**
+   * Lo cargado en la etapa "Actualizar Precios" (tipo, productos, archivo, resultado de la IA,
+   * porcentaje…), por clave. Vive acá y no en la vista para sobrevivir a ir y volver por el stepper;
+   * se borra al cambiar de proveedor o de operación y al empezar una actualización nueva.
+   */
+  borradorPrecios: Record<string, unknown>
+  /**
+   * Lo cargado en "Cargar Datos Iniciales" de CARGAR COMPROBANTE DE COMPRA: el tipo de comprobante,
+   * el archivo y sus datos. Igual que el de precios, vive acá para sobrevivir al stepper y se borra
+   * al cambiar de proveedor o de operación.
+   */
+  borradorComprobante: BorradorComprobante
 }
+
+/** Los datos de un comprobante todavía sin leer: todos vacíos. */
+export const datosComprobanteVacios = (): BorradorComprobante['datos'] => ({
+  nroComprobante: '',
+  fechaEmision: '',
+  fechaVencimiento: '',
+  importeNeto: '',
+  iva: '',
+  percIibb: '',
+  percIg: '',
+  total: '',
+  condicionPago: '',
+  razonSocialEmisor: '',
+  idFiscalEmisor: '',
+  cae: '',
+  fechaVencCae: '',
+})
+
+const borradorComprobanteVacio = (): BorradorComprobante => ({
+  tipo: null,
+  archivo: null,
+  datos: datosComprobanteVacios(),
+})
 
 export const initialState: AppState = {
   paso: 'inicio',
@@ -69,13 +127,20 @@ export const initialState: AppState = {
   proveedor: null,
   lineas: [],
   filtros: [],
-  ordenCompraId: null,
+  nroOrden: null,
+  ordenPdf: null,
   documentoEmitido: false,
   documentoEnviado: false,
+  ordenCompraId: null,
+  ordenRegistrada: false,
   contactos: [],
   medioEnvio: 'Email',
   log: null,
   errorMonday: null,
+  actualizacionPrecios: null,
+  navegacionBloqueada: false,
+  borradorPrecios: {},
+  borradorComprobante: borradorComprobanteVacio(),
 }
 
 export type Action =
@@ -89,20 +154,33 @@ export type Action =
   | { type: 'setProveedor'; proveedor: Proveedor }
   | { type: 'addLinea'; producto: Producto; cantidad: number }
   | { type: 'setCantidadLinea'; id: string; cantidad: number }
+  /** Un administrador altera la "Cant x Envase" de una línea ya cargada (desde la tabla). */
+  | { type: 'setEnvaseLinea'; id: string; cantXUnidad: number }
   | { type: 'removeLinea'; id: string }
   | { type: 'addFiltro'; filtro: Filtro }
   | { type: 'removeFiltro'; filtro: Filtro }
+  | { type: 'setNroOrden'; value: string | null }
+  /** PDF recién generado: queda emitido. */
+  | { type: 'setOrdenPdf'; value: File }
   | { type: 'setOrdenCompraId'; value: string }
+  | { type: 'setOrdenRegistrada'; value: boolean }
   | { type: 'setDocumentoEmitido'; value: boolean }
   | { type: 'setDocumentoEnviado'; value: boolean }
   | { type: 'setContactos'; contactos: Contacto[] }
   | { type: 'addContacto'; contacto: Contacto }
   | { type: 'removeContacto'; id: string }
+  /** Un contacto editado en Monday: se reemplaza en la selección con sus datos nuevos. */
+  | { type: 'actualizarContacto'; contacto: Contacto }
   | { type: 'setMedioEnvio'; value: MedioEnvio }
   | { type: 'setLog'; entries: LogEntry[] | null }
   | { type: 'reset' }
   | { type: 'errorMonday'; accion: string }
   | { type: 'limpiarErrorMonday' }
+  | { type: 'setActualizacionPrecios'; value: ActualizacionHecha | null }
+  | { type: 'setNavegacionBloqueada'; value: boolean }
+  | { type: 'setBorradorPrecios'; clave: string; valor: unknown }
+  | { type: 'limpiarBorradorPrecios' }
+  | { type: 'setBorradorComprobante'; cambios: Partial<BorradorComprobante> }
 
 /**
  * El comprador por defecto es el usuario que abrió la app: el dueño del token de Monday.
@@ -120,7 +198,32 @@ const compradorPorDefecto = (
 let proximaLinea = 0
 const nuevoIdLinea = (): string => `l${++proximaLinea}`
 
+/**
+ * El PDF emitido es la FOTO de la orden: si cambian sus productos o cantidades antes de enviarla,
+ * ya no dice lo mismo que la pantalla, así que se descarta y hay que volver a emitir. Una orden ya
+ * ENVIADA no se toca: lo que recibió el proveedor es lo que se registra.
+ */
+const sinEmision = (s: AppState): Partial<AppState> =>
+  s.documentoEnviado ? {} : { ordenPdf: null, documentoEmitido: false }
+
+/** Las acciones que cambian el contenido de la orden (y por lo tanto su PDF). */
+const CAMBIAN_LA_ORDEN: readonly Action['type'][] = [
+  'setProveedor',
+  'addLinea',
+  'setCantidadLinea',
+  'setEnvaseLinea',
+  'removeLinea',
+]
+
 export function reducer(state: AppState, action: Action): AppState {
+  const siguiente = reducerBase(state, action)
+  if (siguiente !== state && CAMBIAN_LA_ORDEN.includes(action.type) && state.documentoEmitido) {
+    return { ...siguiente, ...sinEmision(state) }
+  }
+  return siguiente
+}
+
+function reducerBase(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'goto': {
       /* Al ir a un paso se recuerda el índice MÁS AVANZADO alcanzado: volver atrás no lo baja, así
@@ -146,7 +249,7 @@ export function reducer(state: AppState, action: Action): AppState {
         compradoresCargando: state.compradoresCargando,
         usuarioActual: state.usuarioActual,
         operacion: action.operacion,
-        paso: 'proveedor',
+        paso: pasoInicialDe(action.operacion),
       }
 
     case 'setComprador':
@@ -187,7 +290,15 @@ export function reducer(state: AppState, action: Action): AppState {
       if (state.proveedor?.id === action.proveedor.id) {
         return { ...state, proveedor: action.proveedor }
       }
-      return { ...state, proveedor: action.proveedor, lineas: [], filtros: [] }
+      return {
+        ...state,
+        proveedor: action.proveedor,
+        lineas: [],
+        filtros: [],
+        actualizacionPrecios: null,
+        borradorPrecios: {},
+        borradorComprobante: borradorComprobanteVacio(),
+      }
 
     /**
      * Alta de una línea. Un producto que ya está cargado NO se duplica: se le suman las unidades a
@@ -195,12 +306,18 @@ export function reducer(state: AppState, action: Action): AppState {
      * de carga, y el proveedor recibiría dos pedidos por lo mismo.
      */
     case 'addLinea': {
+      // Regla de negocio: sólo productos con "✋Estado" Activo se piden en una orden de compra.
+      if (!action.producto.activo) return state
       const existente = state.lineas.find((l) => l.producto.id === action.producto.id)
       if (existente) {
         return {
           ...state,
           lineas: state.lineas.map((l) =>
-            l.id === existente.id ? { ...l, cantidad: l.cantidad + action.cantidad } : l,
+            /* El producto se reemplaza por el recién agregado: puede traer otra "Cant x Envase"
+               alterada por un administrador, y rige la última decisión. */
+            l.id === existente.id
+              ? { ...l, producto: action.producto, cantidad: l.cantidad + action.cantidad }
+              : l,
           ),
         }
       }
@@ -213,17 +330,47 @@ export function reducer(state: AppState, action: Action): AppState {
       }
     }
 
-    /* Una línea YA CARGADA nunca baja del primer envase: una línea en cero no es una línea, es
-       quitarla, y para eso está el tacho de la tabla. Es el único piso distinto del de la tarjeta
-       de carga, que sí arranca en cero porque ahí todavía no hay nada pedido. */
+    /* Una línea YA CARGADA nunca queda en cero: una línea en cero no es una línea, es quitarla, y
+       para eso está el tacho de la tabla. El piso es el primer envase, salvo que la línea ya sea una
+       EXCEPCIÓN cargada por Compras/Administración por debajo del envase (20 de un envase de 40):
+       ahí el piso es una unidad, para no pisar la cantidad pactada con el proveedor. */
     case 'setCantidadLinea':
       return {
         ...state,
         lineas: state.lineas.map((l) =>
           l.id === action.id
-            ? { ...l, cantidad: Math.max(cantPorEnvase(l.producto), action.cantidad) }
+            ? {
+                ...l,
+                cantidad: Math.max(
+                  action.cantidad < cantPorEnvase(l.producto) && action.cantidad > 0
+                    ? 1
+                    : cantPorEnvase(l.producto),
+                  action.cantidad,
+                ),
+              }
             : l,
         ),
+      }
+
+    /* "Cant x Envase" alterada desde la tabla. Se conservan los ENVASES pedidos —es el número que
+       el usuario ve al lado— y las unidades se recalculan con el envase nuevo. Si la línea era una
+       excepción con envases fraccionados, se conservan las unidades. Volver al valor del Maestro
+       borra la marca de "modificada". */
+    case 'setEnvaseLinea':
+      return {
+        ...state,
+        lineas: state.lineas.map((l) => {
+          if (l.id !== action.id || action.cantXUnidad <= 0) return l
+          const { cantXUnidadMaestro, ...base } = l.producto
+          const maestro = cantXUnidadMaestro ?? l.producto.cantXUnidad
+          const producto =
+            action.cantXUnidad === maestro
+              ? { ...base, cantXUnidad: maestro }
+              : { ...base, cantXUnidad: action.cantXUnidad, cantXUnidadMaestro: maestro }
+          const envases = envasesDe(l.producto, l.cantidad)
+          const cantidad = Number.isInteger(envases) ? envases * action.cantXUnidad : l.cantidad
+          return { ...l, producto, cantidad }
+        }),
       }
 
     case 'removeLinea':
@@ -247,6 +394,15 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'setOrdenCompraId':
       return { ...state, ordenCompraId: action.value }
 
+    case 'setNroOrden':
+      return { ...state, nroOrden: action.value }
+
+    case 'setOrdenPdf':
+      return { ...state, ordenPdf: action.value, documentoEmitido: true }
+
+    case 'setOrdenRegistrada':
+      return { ...state, ordenRegistrada: action.value }
+
     case 'setDocumentoEmitido':
       return { ...state, documentoEmitido: action.value }
 
@@ -261,6 +417,12 @@ export function reducer(state: AppState, action: Action): AppState {
     case 'addContacto':
       if (state.contactos.some((c) => c.id === action.contacto.id)) return state
       return { ...state, contactos: [...state.contactos, action.contacto] }
+
+    case 'actualizarContacto':
+      return {
+        ...state,
+        contactos: state.contactos.map((c) => (c.id === action.contacto.id ? action.contacto : c)),
+      }
 
     case 'removeContacto':
       return { ...state, contactos: state.contactos.filter((c) => c.id !== action.id) }
@@ -287,6 +449,29 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'limpiarErrorMonday':
       return { ...state, errorMonday: null }
+
+    /* Una actualización nueva tiene su propio envío: la selección de contactos, el estado "Enviado"
+       y los avisos de la anterior no se arrastran. */
+    case 'setActualizacionPrecios':
+      return {
+        ...state,
+        actualizacionPrecios: action.value,
+        contactos: [],
+        documentoEnviado: false,
+        log: null,
+      }
+
+    case 'setBorradorPrecios':
+      return { ...state, borradorPrecios: { ...state.borradorPrecios, [action.clave]: action.valor } }
+
+    case 'limpiarBorradorPrecios':
+      return { ...state, borradorPrecios: {} }
+
+    case 'setBorradorComprobante':
+      return { ...state, borradorComprobante: { ...state.borradorComprobante, ...action.cambios } }
+
+    case 'setNavegacionBloqueada':
+      return state.navegacionBloqueada === action.value ? state : { ...state, navegacionBloqueada: action.value }
 
     default:
       return state
